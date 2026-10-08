@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Changelog — Batch File Renamer</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site">
+  <h1>🗂️ <span class="accent">Changelog</span> — ประวัติการเปลี่ยนแปลง</h1>
+  <p>อ้างอิง Keep a Changelog · SemVer</p>
+</header>
+<nav class="toc">
+  <a href="index.html">หน้าแรก</a>
+  <a href="README.html">README</a>
+  <a href="RESEARCH.html">Research</a>
+  <a href="CHANGELOG.html">Changelog</a>
+</nav>
+<main>
+
+<h2><span class="no">v0.2.0</span> — 2026-10-08</h2>
+
+<h3>เพิ่ม (Added)</h3>
+<table>
+  <tr><th>ฟีเจอร์</th><th>รายละเอียด</th></tr>
+  <tr><td>📂 Native folder picker</td><td>ปุ่มเลือกโฟลเดอร์จริงผ่าน <code>tauri-plugin-dialog</code> แทนการพิมพ์ path</td></tr>
+  <tr><td>📋 Import List จากไฟล์</td><td>เลือก CSV/TXT → สร้างกฎ Import List อัตโนมัติ รองรับแบบคู่ชื่อ <code>old,new</code> และเรียงลำดับ</td></tr>
+  <tr><td>⏳ Progress bar real-time</td><td>Rust ส่ง event <code>rename-progress</code> ทุก 50 รายการขึ้นแถบสถานะ</td></tr>
+  <tr><td>📝 Log รายวัน</td><td><code>core/logger.rs</code> — ไฟล์ <code>logs/renamer-YYYY-MM-DD.log</code>, level ควบคุมด้วย <code>RENAMER_LOG=debug</code>, ใช้ร่วม GUI/CLI, ครอบสแกน/พรีวิว/rename/undo/rollback</td></tr>
+  <tr><td>IPC ใหม่</td><td><code>parse_import_list</code>, <code>log_file_path</code></td></tr>
+  <tr><td>Tauri capabilities</td><td>แก้ IPC โดน deny ตอน runtime</td></tr>
+  <tr><td>เอกสาร + AGENT.md</td><td>docs/ ครบ Markdown + HTML + แผนภาพ SVG + index</td></tr>
+</table>
+
+<h3>แก้ (Fixed)</h3>
+<table>
+  <tr><th>ปัญหา</th><th>ผล</th></tr>
+  <tr><td>Regex compile ซ้ำทุกไฟล์ → เพิ่ม RegexCache</td><td class="ok">พรีวิว 10k เร็วขึ้น 54× (3,270 ms → 60.6 ms)</td></tr>
+  <tr><td>สลับชื่อไฟล์ A↔B ล้มเหลว (เช็คปลายทางบัง + lookup temp ไม่เจอ)</td><td class="ok">swap ทำงานถูกต้อง มี test ครอบ</td></tr>
+  <tr><td>Numbering แทรกเลขหลังนามสกุลในโหมด Full</td><td class="ok">แทรกก่อนนามสกุลเสมอ</td></tr>
+  <tr><td>UI ส่ง camelCase แต่ serde ต้องการ snake_case</td><td class="ok">กฎทั้งหมด round-trip ได้</td></tr>
+</table>
+
+<h2><span class="no">v0.1.0</span> — 2026-10-08</h2>
+<h3>เปิดตัวครั้งแรก</h3>
+<ul>
+  <li><strong>Core engine (Rust):</strong> สแกนขนาน (jwalk), กฎ 14 ประเภท grapheme-aware, validator, executor chain/cycle, journal write-ahead + Undo ข้าม restart</li>
+  <li><strong>GUI (Tauri 2 + Svelte 5):</strong> live preview virtual list, ไฮไลต์ diff, แก้ชื่อมือได้, preset, i18n ไทย/อังกฤษ, ธีม Dark/Light, คีย์ลัด</li>
+  <li><strong>CLI:</strong> <code>preview</code> / <code>undo</code> / <code>presets</code>, dry-run ค่าเริ่มต้น, exit codes</li>
+  <li><strong>Tests:</strong> เกณฑ์ยอมรับ 1–7 ครบ + benchmark (~60 ms สำหรับ 10k ไฟล์)</li>
+  <li><strong>Build:</strong> installer NSIS (1.37 MB) + MSI (1.98 MB)</li>
+</ul>
+
+</main>
+<footer>Batch File Renamer · <a href="CHANGELOG.md" style="color:var(--accent)">ดูเวอร์ชัน Markdown</a></footer>
+</body>
+</html>

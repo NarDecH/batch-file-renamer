@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>README — Batch File Renamer</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site">
+  <h1>📖 <span class="accent">README</span> — คู่มือการใช้งาน</h1>
+  <p>Batch File Renamer v0.2.0</p>
+</header>
+<nav class="toc">
+  <a href="index.html">หน้าแรก</a>
+  <a href="README.html">README</a>
+  <a href="RESEARCH.html">Research</a>
+  <a href="CHANGELOG.html">Changelog</a>
+</nav>
+<main>
+
+<h2><span class="no">01</span>ภาพรวม</h2>
+<p>โปรแกรมเปลี่ยนชื่อไฟล์และโฟลเดอร์จำนวนมากพร้อมกัน — <strong>ปลอดภัยต่อข้อมูล, เร็วระดับไฟล์หลักแสน, เห็นผลลัพธ์ก่อนเปลี่ยนจริงเสมอ</strong></p>
+<table>
+  <tr><th></th><th></th></tr>
+  <tr><td>Tech Stack</td><td>Rust (core) · Tauri 2 · Svelte 5</td></tr>
+  <tr><td>แพลตฟอร์ม</td><td>Windows (หลัก) · โค้ดเขียน cross-platform</td></tr>
+  <tr><td>ขนาดตัวติดตั้ง</td><td>~1.4 MB (NSIS) / ~2 MB (MSI)</td></tr>
+  <tr><td>Performance</td><td>พรีวิว 10,000 ไฟล์ × 5 กฎ ≈ <strong>60 ms</strong></td></tr>
+</table>
+
+<figure>
+  <object type="image/svg+xml" data="images/ui-mockup.svg" style="width:100%">UI</object>
+  <figcaption>หน้าจอหลัก (ภาพจำลอง)</figcaption>
+</figure>
+
+<h2><span class="no">02</span>ฟีเจอร์</h2>
+<div class="cards">
+  <div class="card"><h3>นำเข้า</h3><p>native folder picker, recursive + กำหนดความลึก, กรอง wildcard/regex/ขนาด/วันที่, natural sort</p></div>
+  <div class="card"><h3>กฎ 14 ประเภท</h3><p>Replace, Regex, Insert, Remove, Case, Numbering, Extension, Date/Time, Metadata, Template, Clean up, Swap, Import List (CSV/TXT), Hash/UUID</p></div>
+  <div class="card"><h3>Live Preview</h3><p>ตาราง virtualized, ไฮไลต์ส่วนที่เปลี่ยน, สีสถานะ, แก้ชื่อมือได้ (ดับเบิลคลิก)</p></div>
+  <div class="card"><h3>ปลอดภัย</h3><p>ชื่อซ้ำ/ชื่อสงวน/อักขระต้องห้าม, conflict 3 โหมด, journal write-ahead, rollback อัตโนมัติ</p></div>
+  <div class="card"><h3>Undo + Log</h3><p>ย้อนหลังข้าม restart + log รายวัน (<code>RENAMER_LOG=debug</code>)</p></div>
+  <div class="card"><h3>Preset / i18n / CLI</h3><p>บันทึกชุดกฎ, ไทย/อังกฤษ, Dark/Light, คีย์ลัด, CLI dry-run ค่าเริ่มต้น</p></div>
+</div>
+
+<figure>
+  <object type="image/svg+xml" data="images/architecture.svg" style="width:100%">Architecture</object>
+  <figcaption>สถาปัตยกรรม</figcaption>
+</figure>
+
+<h2><span class="no">03</span>ติดตั้งและรัน</h2>
+<pre><code>cd renamer
+npm install
+npm run build
+cd src-tauri &amp;&amp; cargo run      # โหมด dev
+
+# Build แจกจ่าย → src-tauri/target/release/bundle/
+npm run tauri build</code></pre>
+
+<h2><span class="no">04</span>ใช้งาน CLI</h2>
+<pre><code>renamer --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
+renamer --apply     preview -f "D:\Music"  -r -p music
+renamer undo
+renamer presets</code></pre>
+<p>Exit codes: <code>0</code> สำเร็จ · <code>1</code> ไม่มีอะไรให้ undo · <code>2</code> สแกน/พรีวิวล้มเหลว · <code>3</code> rename บางรายการล้มเหลว</p>
+
+<h2><span class="no">05</span>ตัวอย่างการใช้งานจริง 5 กรณี</h2>
+<table>
+  <tr><th>#</th><th>สถานการณ์</th><th>วิธีทำ</th><th>ผลลัพธ์</th></tr>
+  <tr><td>1</td><td>ตั้งชื่อรูปตามวันที่ถ่าย</td><td>preset <code>photos</code> (EXIF date + numbering)</td><td><code>IMG_20240315_143022.JPG → 2024-03-15_001.JPG</code></td></tr>
+  <tr><td>2</td><td>จัดชื่อเพลง</td><td>preset <code>music</code> (Template + Clean up)</td><td><code>Artist - Title.mp3</code></td></tr>
+  <tr><td>3</td><td>ชื่อ URL-friendly</td><td>Clean up (strip accents, space→-) + Case lower</td><td><code>Café Ñandú Ep 1.mp4 → cafe-nandu-ep-1.mp4</code></td></tr>
+  <tr><td>4</td><td>สลับชื่อไฟล์สองไฟล์</td><td>แก้ชื่อใหม่ด้วยมือในตาราง</td><td>engine จัด cycle ด้วย temp name อัตโนมัติ</td></tr>
+  <tr><td>5</td><td>เลขรัน natural sort</td><td>Numbering (pad 3)</td><td><code>ep1, ep2, ep10 → ep001, ep002, ep010</code></td></tr>
+</table>
+
+<h2><span class="no">06</span>เกณฑ์ยอมรับ (automated tests)</h2>
+<table>
+  <tr><th>#</th><th>เกณฑ์</th><th>ผล</th></tr>
+  <tr><td>1</td><td>Pipeline ครบ → <code>Trip_2024-03-15_001.jpg</code></td><td class="ok">✅</td></tr>
+  <tr><td>2</td><td>สลับ a.txt ↔ b.txt เนื้อหาถูกต้อง</td><td class="ok">✅</td></tr>
+  <tr><td>3</td><td>photo.JPG → photo.jpg ไม่ถูกมองว่าซ้ำ</td><td class="ok">✅</td></tr>
+  <tr><td>4</td><td>ชื่อซ้ำแจ้งเตือน + auto-suffix (1)</td><td class="ok">✅</td></tr>
+  <tr><td>5</td><td>Natural sort + เลขรัน 001/002/003</td><td class="ok">✅</td></tr>
+  <tr><td>6</td><td>Undo หลังปิดโปรแกรม</td><td class="ok">✅</td></tr>
+  <tr><td>7</td><td>ไทย/อีโมจิ ลบ 1 ตัวแรกไม่มีสระลอย</td><td class="ok">✅</td></tr>
+  <tr><td>8</td><td>Preview 10k × 5 กฎ ≤ 200 ms</td><td class="ok">✅ ~60 ms</td></tr>
+</table>
+
+<h2><span class="no">07</span>Logging สำหรับดีบัก</h2>
+<p>ไฟล์ log รายวันที่ <code>%APPDATA%/batch-renamer/logs/renamer-YYYY-MM-DD.log</code></p>
+<pre><code>RENAMER_LOG=debug renamer --dry-run preview -f "D:\Photos"</code></pre>
+<p>บันทึก: เวลาสแกน/จำนวนไฟล์ · เวลาพรีวิวแต่ละรอบ · ทุก rename (โหมด debug) · ความล้มเหลว + สาเหตุ · undo ทุกไฟล์ · การ rollback</p>
+
+</main>
+<footer>Batch File Renamer · <a href="README.md" style="color:var(--accent)">ดูเวอร์ชัน Markdown</a></footer>
+</body>
+</html>

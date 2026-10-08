@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "music",
+  "rules": [
+    {
+      "params": {
+        "type": "template",
+        "template": "{artist} - {title}"
+      },
+      "enabled": true,
+      "apply_to": "name",
+      "only_if_glob": null
+    },
+    {
+      "params": {
+        "type": "cleanup",
+        "trim": true,
+        "collapse_spaces": true,
+        "space_replacement": "",
+        "strip_forbidden": true,
+        "strip_accents": false,
+        "normalize_nfc": true
+      },
+      "enabled": true,
+      "apply_to": null,
+      "only_if_glob": null
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Batch File Renamer — เปลี่ยนชื่อไฟล์หลักแสน ปลอดภัย เร็ว</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="site">
+  <h1>📁 Batch <span class="accent">File Renamer</span></h1>
+  <p>เปลี่ยนชื่อไฟล์และโฟลเดอร์หลักแสนพร้อมกัน — ปลอดภัยต่อข้อมูลเป็นอันดับหนึ่ง</p>
+  <p style="margin-top:10px">
+    <span class="badge ok">Rust + Tauri 2</span>
+    <span class="badge ok">ติดตั้งแค่ 1.4 MB</span>
+    <span class="badge ok">Preview 10k ไฟล์ ≈ 60 ms</span>
+    <span class="badge warn">Windows (หลัก)</span>
+  </p>
+</header>
+
+<nav class="toc">
+  <a href="index.html">หน้าแรก</a>
+  <a href="README.html">คู่มือ (README)</a>
+  <a href="RESEARCH.html">วิจัยและเหตุผล (Research)</a>
+  <a href="CHANGELOG.html">สิ่งที่เปลี่ยน (Changelog)</a>
+  <a href="../README.md">README.md</a>
+</nav>
+
+<main>
+  <figure>
+    <object type="image/svg+xml" data="images/ui-mockup.svg" style="width:100%">UI</object>
+    <figcaption>หน้าจอหลัก: แผงกฎ | ตารางพรีวิวแบบ virtual list | แถบสถานะพร้อม progress bar</figcaption>
+  </figure>
+
+  <h2><span class="no">✦</span>ทำไมต้องใช้ตัวนี้</h2>
+  <div class="cards">
+    <div class="card"><h3>🛡️ ปลอดภัยก่อนอะไรทั้งปวง</h3><p>ตรวจปลายทางบนดิสก์ทุกไฟล์ทุกครั้ง, journal write-ahead, ยกเลิกแล้ว rollback คืนทั้งชุด, Undo ได้แม้ปิดโปรแกรมไปแล้ว</p></div>
+    <div class="card"><h3>⚡ เร็ว 54 เท่าจากการวัดจริง</h3><p>Pipeline 10,000 ไฟล์ × 5 กฎ ใช้เพียง ~60 ms (จากเดิม 3.27 s) — ตาราง 100k แถวเลื่อนลื่นด้วย virtual list</p></div>
+    <div class="card"><h3>🔤 เข้าใจภาษาไทยจริง</h3><p>ตัด/แทรกข้อความแบบ grapheme — สระ วรรณยุกต์ อีโมจิ ไม่หลุดลอย พร้อมรองรับชื่อสงวนของ Windows ครบ</p></div>
+    <div class="card"><h3>🧩 กฎ 14 ประเภท + Preset</h3><p>Replace, Regex, EXIF วันที่ถ่าย, แท็กเพลง, Numbering, Import CSV… บันทึกชุดกฎใช้ซ้ำได้ทั้ง GUI และ CLI</p></div>
+    <div class="card"><h3>👁️ เห็นก่อนแตะ</h3><p>พรีวิวสดทุกครั้งที่แก้กฎ ไฮไลต์ส่วนที่เปลี่ยน แก้ชื่อทับด้วยมือได้ ยืนยันอีกครั้งก่อน rename จริง</p></div>
+    <div class="card"><h3>🖥️ GUI + CLI ในเดียว</h3><p>engine ชุดเดียวกัน — ใช้เมาส์ใน GUI หรือเขียนสคริปต์ผ่าน CLI ก็ได้ผลเหมือนกันเป๊ะ</p></div>
+  </div>
+
+  <h2><span class="no">🗺️</span>สถาปัตยกรรม</h2>
+  <figure>
+    <object type="image/svg+xml" data="images/architecture.svg" style="width:100%">Architecture</object>
+    <figcaption>Core engine (Rust) แยกจาก UI โดยสิ้นเชิง — GUI และ CLI ใช้ engine เดียวกัน ทดสอบด้วย cargo test ได้ตรง ๆ</figcaption>
+  </figure>
+
+  <h2><span class="no">🚀</span>เริ่มใช้ใน 30 วินาที</h2>
+  <pre><code># dev
+cd renamer &amp;&amp; npm install
+npm run build &amp;&amp; cd src-tauri &amp;&amp; cargo run
+
+# แจกจ่าย (ได้ NSIS + MSI installer)
+npm run tauri build
+
+# CLI
+renamer --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
+renamer --apply preview -f "D:\Photos" -r --include "*.jpg" -p photos
+renamer undo</code></pre>
+
+  <h2><span class="no">📄</span>เอกสารทั้งหมด</h2>
+  <table>
+    <tr><th>เอกสาร</th><th>เนื้อหา</th></tr>
+    <tr><td><a href="README.html">README</a></td><td>ฟีเจอร์ครบ, วิธีติดตั้ง, CLI, ตัวอย่างการใช้งาน 5 กรณี, ตารางเกณฑ์ยอมรับ</td></tr>
+    <tr><td><a href="RESEARCH.html">Research</a></td><td>เหตุผลการเลือก stack, บทเรียน benchmark 54×, การออกแบบความปลอดภัย, grapheme ภาษาไทย</td></tr>
+    <tr><td><a href="CHANGELOG.html">Changelog</a></td><td>ประวัติเวอร์ชัน 0.1.0 → 0.2.0</td></tr>
+    <tr><td><a href="../AGENT.md">AGENT.md</a></td><td>คู่มือสำหรับ AI agent ที่จะมาแก้โค้ดต่อ</td></tr>
+  </table>
+
+  <h2><span class="no">✅</span>เกณฑ์ยอมรับ — ผ่านทั้ง 8 ข้อ</h2>
+  <table>
+    <tr><th>#</th><th>เกณฑ์</th><th>ผล</th></tr>
+    <tr><td>1</td><td>Pipeline 5 กฎครบ → Trip_2024-03-15_001.jpg</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>2</td><td>สลับชื่อ a.txt ↔ b.txt เนื้อหาถูกต้อง</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>3</td><td>photo.JPG → photo.jpg ไม่นับว่าชื่อซ้ำ</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>4</td><td>ชื่อซ้ำแจ้งเตือน + auto-suffix (1)</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>5</td><td>Natural sort ep1, ep2, ep10 → 001, 002, 003</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>6</td><td>Undo ได้หลังปิดโปรแกรม (journal)</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>7</td><td>"น้ำตก ภูกระดึง 😀" ตัด 1 ตัวแรกไม่มีสระลอย</td><td class="ok">ผ่าน</td></tr>
+    <tr><td>8</td><td>Preview 10,000 ไฟล์ × 5 กฎ ≤ 200 ms</td><td class="ok">ผ่าน (~60 ms)</td></tr>
+  </table>
+</main>
+
+<footer>Batch File Renamer · Rust + Tauri 2 + Svelte · สร้างด้วย Codebuff</footer>
+</body>
+</html>

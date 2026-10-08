@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" font-family="Segoe UI, sans-serif">
+  <defs>
+    <marker id="a2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L9,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect width="900" height="300" rx="14" fill="#0f172a"/>
+  <text x="450" y="40" text-anchor="middle" fill="#e2e8f0" font-size="20" font-weight="700">เส้นทางความปลอดภัยของข้อมูล (จากกฎ → ดิสก์)</text>
+
+  <g font-size="13" fill="#e2e8f0" text-anchor="middle">
+    <rect x="30"  y="90" width="130" height="70" rx="10" fill="#1e293b" stroke="#475569"/>
+    <text x="95"  y="120">1. พรีวิว</text><text x="95" y="140" fill="#94a3b8" font-size="11">เห็นผลก่อนจริง</text>
+
+    <rect x="185" y="90" width="130" height="70" rx="10" fill="#1e293b" stroke="#475569"/>
+    <text x="250" y="113">2. Validate</text><text x="250" y="133" fill="#94a3b8" font-size="11">ชื่อซ้ำ/สงวน/ต้องห้าม</text><text x="250" y="149" fill="#94a3b8" font-size="11">ในหน่วยความจำ</text>
+
+    <rect x="340" y="90" width="130" height="70" rx="10" fill="#1e293b" stroke="#475569"/>
+    <text x="405" y="113">3. ยืนยัน</text><text x="405" y="133" fill="#94a3b8" font-size="11">สรุปจำนวนไฟล์</text><text x="405" y="149" fill="#94a3b8" font-size="11">ผู้ใช้กดอนุมัติ</text>
+
+    <rect x="495" y="90" width="130" height="70" rx="10" fill="#1e293b" stroke="#f59e0b"/>
+    <text x="560" y="113">4. Journal</text><text x="560" y="133" fill="#94a3b8" font-size="11">write-ahead ก่อนแตะดิสก์</text><text x="560" y="149" fill="#94a3b8" font-size="11">กู้คืนได้แม้แครช</text>
+
+    <rect x="650" y="90" width="130" height="70" rx="10" fill="#1e293b" stroke="#f59e0b"/>
+    <text x="715" y="113">5. เช็คดิสก์</text><text x="715" y="133" fill="#94a3b8" font-size="11">ปลายทางว่างจริง?</text><text x="715" y="149" fill="#94a3b8" font-size="11">ทุกไฟล์ ทุกครั้ง</text>
+
+    <rect x="330" y="210" width="140" height="60" rx="10" fill="#1e293b" stroke="#22c55e"/>
+    <text x="400" y="234" fill="#4ade80">6. rename จริง</text><text x="400" y="254" fill="#94a3b8" font-size="11">chain เรียงลำดับ / cycle → temp</text>
+
+    <rect x="520" y="210" width="140" height="60" rx="10" fill="#1e293b" stroke="#22c55e"/>
+    <text x="590" y="234" fill="#4ade80">7. เสร็จ → Undo ได้</text><text x="590" y="254" fill="#94a3b8" font-size="11">ย้อนหลังหลายชุด ข้าม restart</text>
+
+    <rect x="110" y="210" width="160" height="60" rx="10" fill="#1e293b" stroke="#ef4444"/>
+    <text x="190" y="234" fill="#f87171">ยกเลิก / ล้มเหลว</text><text x="190" y="254" fill="#94a3b8" font-size="11">rollback คืนทั้งชุดอัตโนมัติ</text>
+  </g>
+
+  <g stroke="#94a3b8" stroke-width="2">
+    <line x1="160" y1="125" x2="183" y2="125" marker-end="url(#a2)"/>
+    <line x1="315" y1="125" x2="338" y2="125" marker-end="url(#a2)"/>
+    <line x1="470" y1="125" x2="493" y2="125" marker-end="url(#a2)"/>
+    <line x1="625" y1="125" x2="648" y2="125" marker-end="url(#a2)"/>
+    <line x1="715" y1="162" x2="480" y2="212" marker-end="url(#a2)"/>
+    <line x1="410" y1="210" x2="410" y2="165" marker-end="url(#a2)"/>
+    <line x1="470" y1="240" x2="518" y2="240" marker-end="url(#a2)"/>
+    <line x1="330" y1="240" x2="272" y2="240" marker-end="url(#a2)"/>
+  </g>
+</svg>

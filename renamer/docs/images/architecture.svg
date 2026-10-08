@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" font-family="Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#334155"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L9,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect width="900" height="480" rx="14" fill="#0f172a"/>
+  <rect x="0" y="0" width="900" height="54" rx="14" fill="url(#hdr)"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="20" font-weight="700">สถาปัตยกรรม Batch File Renamer</text>
+
+  <!-- GUI column -->
+  <rect x="30" y="80" width="220" height="360" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="140" y="108" text-anchor="middle" fill="#60a5fa" font-size="16" font-weight="700">GUI (Tauri 2)</text>
+  <rect x="50" y="130" width="180" height="52" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="140" y="152" text-anchor="middle" fill="#e2e8f0" font-size="13">Svelte 5 — Toolbar</text>
+  <text x="140" y="170" text-anchor="middle" fill="#94a3b8" font-size="11">เลือกโฟลเดอร์ (dialog plugin)</text>
+  <rect x="50" y="196" width="180" height="52" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="140" y="218" text-anchor="middle" fill="#e2e8f0" font-size="13">RulesPanel</text>
+  <text x="140" y="236" text-anchor="middle" fill="#94a3b8" font-size="11">14 กฎ + Import CSV</text>
+  <rect x="50" y="262" width="180" height="52" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="140" y="284" text-anchor="middle" fill="#e2e8f0" font-size="13">PreviewTable (virtual)</text>
+  <text x="140" y="302" text-anchor="middle" fill="#94a3b8" font-size="11">render เฉพาะแถวที่มองเห็น</text>
+  <rect x="50" y="328" width="180" height="52" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="140" y="350" text-anchor="middle" fill="#e2e8f0" font-size="13">StatusBar + Progress</text>
+  <text x="140" y="368" text-anchor="middle" fill="#94a3b8" font-size="11">event จาก Rust ทุก 50 รายการ</text>
+
+  <!-- IPC arrow -->
+  <line x1="255" y1="260" x2="330" y2="260" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="292" y="248" text-anchor="middle" fill="#94a3b8" font-size="11">IPC</text>
+
+  <!-- Core column -->
+  <rect x="335" y="80" width="270" height="360" rx="12" fill="#1e293b" stroke="#2563eb"/>
+  <text x="470" y="108" text-anchor="middle" fill="#60a5fa" font-size="16" font-weight="700">Core Engine (Rust, ไม่มี UI)</text>
+  <rect x="355" y="130" width="230" height="40" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="470" y="156" text-anchor="middle" fill="#e2e8f0" font-size="13">scanner — jwalk ขนาน</text>
+  <rect x="355" y="182" width="230" height="40" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="470" y="208" text-anchor="middle" fill="#e2e8f0" font-size="13">rules pipeline — 14 กฎ</text>
+  <rect x="355" y="234" width="230" height="40" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="470" y="260" text-anchor="middle" fill="#e2e8f0" font-size="13">preview + validator</text>
+  <rect x="355" y="286" width="230" height="40" rx="8" fill="#0f172a" stroke="#f59e0b"/>
+  <text x="470" y="312" text-anchor="middle" fill="#fbbf24" font-size="13">executor — chain/cycle ปลอดภัย</text>
+  <rect x="355" y="338" width="110" height="40" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="410" y="364" text-anchor="middle" fill="#e2e8f0" font-size="12">metadata lazy</text>
+  <rect x="475" y="338" width="110" height="40" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="530" y="364" text-anchor="middle" fill="#e2e8f0" font-size="12">regex cache</text>
+
+  <!-- CLI column -->
+  <rect x="650" y="80" width="220" height="150" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="760" y="108" text-anchor="middle" fill="#60a5fa" font-size="16" font-weight="700">CLI (renamer.exe)</text>
+  <text x="760" y="140" text-anchor="middle" fill="#e2e8f0" font-size="12">ใช้ engine เดียวกับ GUI</text>
+  <text x="760" y="162" text-anchor="middle" fill="#94a3b8" font-size="12">dry-run ค่าเริ่มต้น</text>
+  <text x="760" y="184" text-anchor="middle" fill="#94a3b8" font-size="12">--preset photos.json --apply</text>
+
+  <!-- Disk column -->
+  <rect x="650" y="250" width="220" height="190" rx="12" fill="#1e293b" stroke="#334155"/>
+  <text x="760" y="278" text-anchor="middle" fill="#f59e0b" font-size="16" font-weight="700">ดิสก์ / ข้อมูล</text>
+  <rect x="670" y="296" width="180" height="34" rx="8" fill="#0f172a" stroke="#22c55e"/>
+  <text x="760" y="318" text-anchor="middle" fill="#e2e8f0" font-size="12">journal (write-ahead JSON)</text>
+  <rect x="670" y="338" width="180" height="34" rx="8" fill="#0f172a" stroke="#22c55e"/>
+  <text x="760" y="360" text-anchor="middle" fill="#e2e8f0" font-size="12">logs/renamer-วันที่.log</text>
+  <rect x="670" y="380" width="180" height="34" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="760" y="402" text-anchor="middle" fill="#e2e8f0" font-size="12">presets/*.json</text>
+
+  <line x1="645" y1="300" x2="610" y2="300" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="875" y1="330" x2="885" y2="330" stroke="#94a3b8" stroke-width="2"/>
+</svg>

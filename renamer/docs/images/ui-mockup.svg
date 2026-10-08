@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 520" font-family="Consolas, monospace">
+  <rect width="940" height="520" rx="14" fill="#0f172a"/>
+  <!-- window chrome -->
+  <rect x="0" y="0" width="940" height="34" rx="14" fill="#1e293b"/>
+  <circle cx="22" cy="17" r="6" fill="#f87171"/><circle cx="42" cy="17" r="6" fill="#facc15"/><circle cx="62" cy="17" r="6" fill="#4ade80"/>
+  <text x="470" y="22" text-anchor="middle" fill="#94a3b8" font-size="13">Batch File Renamer</text>
+
+  <!-- toolbar -->
+  <rect x="10" y="44" width="920" height="40" rx="8" fill="#1e293b"/>
+  <text x="24" y="69" fill="#94a3b8" font-size="12">โฟลเดอร์:</text>
+  <rect x="80" y="52" width="360" height="24" rx="5" fill="#0f172a" stroke="#334155"/>
+  <text x="90" y="69" fill="#e2e8f0" font-size="12">D:\Photos\Trip-2024</text>
+  <rect x="448" y="52" width="26" height="24" rx="5" fill="#0f172a" stroke="#334155"/>
+  <text x="455" y="69" fill="#e2e8f0" font-size="12">…</text>
+  <rect x="484" y="52" width="130" height="24" rx="5" fill="#0f172a" stroke="#334155"/>
+  <text x="494" y="69" fill="#94a3b8" font-size="11">☐ รวมโฟลเดอร์ย่อย</text>
+  <rect x="622" y="52" width="150" height="24" rx="5" fill="#0f172a" stroke="#334155"/>
+  <text x="632" y="69" fill="#94a3b8" font-size="11">กรอง (*.jpg, *.png)</text>
+  <rect x="780" y="52" width="80" height="24" rx="5" fill="#2563eb"/>
+  <text x="820" y="69" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">สแกน</text>
+
+  <!-- rules panel -->
+  <rect x="10" y="94" width="290" height="330" rx="8" fill="#1e293b"/>
+  <text x="24" y="118" fill="#e2e8f0" font-size="13" font-weight="700">กฎการเปลี่ยนชื่อ</text>
+  <rect x="24" y="132" width="262" height="22" rx="5" fill="#0f172a" stroke="#334155"/>
+  <text x="34" y="147" fill="#94a3b8" font-size="11">+ เพิ่มกฎ</text>
+
+  <rect x="24" y="164" width="262" height="56" rx="6" fill="#0f172a" stroke="#334155"/>
+  <rect x="32" y="172" width="12" height="12" rx="2" fill="#4ade80"/>
+  <text x="52" y="183" fill="#e2e8f0" font-size="12" font-weight="700">1. Regex</text>
+  <text x="52" y="200" fill="#94a3b8" font-size="11">IMG_($1)-($2)-($3)…</text>
+
+  <rect x="24" y="228" width="262" height="56" rx="6" fill="#0f172a" stroke="#334155"/>
+  <rect x="32" y="236" width="12" height="12" rx="2" fill="#4ade80"/>
+  <text x="52" y="247" fill="#e2e8f0" font-size="12" font-weight="700">2. Insert</text>
+  <text x="52" y="264" fill="#94a3b8" font-size="11">แทรก "Trip_" ที่ต้นชื่อ</text>
+
+  <rect x="24" y="292" width="262" height="56" rx="6" fill="#0f172a" stroke="#334155"/>
+  <rect x="32" y="300" width="12" height="12" rx="2" fill="#4ade80"/>
+  <text x="52" y="311" fill="#e2e8f0" font-size="12" font-weight="700">3. Numbering</text>
+  <text x="52" y="328" fill="#94a3b8" font-size="11">ท้ายชื่อ _001 (เติมศูนย์ 3 หลัก)</text>
+
+  <rect x="24" y="356" width="262" height="56" rx="6" fill="#0f172a" stroke="#334155"/>
+  <rect x="32" y="364" width="12" height="12" rx="2" fill="#4ade80"/>
+  <text x="52" y="375" fill="#e2e8f0" font-size="12" font-weight="700">4. Extension</text>
+  <text x="52" y="392" fill="#94a3b8" font-size="11">นามสกุลเป็นตัวพิมพ์เล็ก</text>
+
+  <!-- preview table -->
+  <rect x="310" y="94" width="620" height="330" rx="8" fill="#1e293b"/>
+  <rect x="322" y="104" width="200" height="22" rx="5" fill="#0f172a" stroke="#334155"/>
+  <text x="332" y="119" fill="#94a3b8" font-size="11">ค้นหาในตาราง</text>
+
+  <rect x="322" y="136" width="596" height="24" fill="#0f172a"/>
+  <text x="330" y="153" fill="#94a3b8" font-size="11">สถานะ    ชื่อเดิม</text>
+  <text x="560" y="153" fill="#94a3b8" font-size="11">ชื่อใหม่</text>
+
+  <text x="330" y="180" fill="#4ade80" font-size="11">✓</text>
+  <text x="350" y="180" fill="#e2e8f0" font-size="11">IMG_20240315_143022.JPG</text>
+  <text x="560" y="180" font-size="11"><tspan fill="#e2e8f0">Trip_</tspan><tspan fill="#4ade80">2024-03-15_001</tspan><tspan fill="#e2e8f0">.</tspan><tspan fill="#4ade80">jpg</tspan></text>
+
+  <text x="330" y="204" fill="#4ade80" font-size="11">✓</text>
+  <text x="350" y="204" fill="#e2e8f0" font-size="11">IMG_20240315_144501.JPG</text>
+  <text x="560" y="204" font-size="11"><tspan fill="#e2e8f0">Trip_</tspan><tspan fill="#4ade80">2024-03-15_002</tspan><tspan fill="#e2e8f0">.jpg</tspan></text>
+
+  <text x="330" y="228" fill="#4ade80" font-size="11">✓</text>
+  <text x="350" y="228" fill="#e2e8f0" font-size="11">IMG_20240316_091120.JPG</text>
+  <text x="560" y="228" font-size="11"><tspan fill="#e2e8f0">Trip_</tspan><tspan fill="#4ade80">2024-03-16_003</tspan><tspan fill="#e2e8f0">.jpg</tspan></text>
+
+  <text x="330" y="252" fill="#facc15" font-size="11">⚠</text>
+  <text x="350" y="252" fill="#e2e8f0" font-size="11">copy_of_trip.jpg</text>
+  <text x="560" y="252" font-size="11"><tspan fill="#e2e8f0">Trip_2024-03-15_001 (1).jpg</tspan></text>
+  <text x="578" y="266" fill="#94a3b8" font-size="10">ชนชื่อ → เติม (1) อัตโนมัติ</text>
+
+  <text x="330" y="290" fill="#f87171" font-size="11">✗</text>
+  <text x="350" y="290" fill="#e2e8f0" font-size="11">con.txt</text>
+  <text x="560" y="290" fill="#f87171" font-size="11">'CON' เป็นชื่อสงวนของ Windows</text>
+
+  <text x="330" y="314" fill="#94a3b8" font-size="11">·</text>
+  <text x="350" y="314" fill="#94a3b8" font-size="11">unchanged_ลาก.txt</text>
+  <text x="560" y="314" fill="#94a3b8" font-size="11">(ชื่อเดิม — ไม่แตะ)</text>
+
+  <!-- status bar -->
+  <rect x="10" y="434" width="920" height="40" rx="8" fill="#1e293b"/>
+  <text x="24" y="459" fill="#94a3b8" font-size="12">ทั้งหมด: <tspan fill="#e2e8f0">128</tspan>   พร้อม: <tspan fill="#4ade80">126</tspan>   ไม่เปลี่ยน: <tspan fill="#e2e8f0">1</tspan>   เตือน: <tspan fill="#facc15">1</tspan>   ผิดพลาด: <tspan fill="#f87171">1</tspan></text>
+  <rect x="560" y="446" width="120" height="16" rx="8" fill="#0f172a" stroke="#334155"/>
+  <rect x="561" y="447" width="72" height="14" rx="7" fill="#2563eb"/>
+  <text x="692" y="459" fill="#60a5fa" font-size="11">60/128 (47%)</text>
+  <rect x="800" y="444" width="120" height="26" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="860" y="461" text-anchor="middle" fill="#e2e8f0" font-size="11">↩ ย้อนกลับ</text>
+  <rect x="726" y="444" width="66" height="26" rx="6" fill="#4ade80"/>
+  <text x="759" y="461" text-anchor="middle" fill="#052e16" font-size="11" font-weight="700">▶ เปลี่ยน</text>
+
+  <text x="470" y="502" text-anchor="middle" fill="#475569" font-size="11">ภาพจำลองหน้าจอหลัก (mock) — ธีม Dark, ภาษาไทย</text>
+</svg>

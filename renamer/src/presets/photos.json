@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "name": "photos",
+  "rules": [
+    {
+      "params": {
+        "type": "date_time",
+        "source": "exif",
+        "format": "%Y-%m-%d",
+        "mode": "prefix",
+        "separator": "_"
+      },
+      "enabled": true,
+      "apply_to": null,
+      "only_if_glob": null
+    },
+    {
+      "params": {
+        "type": "numbering",
+        "start": 1,
+        "step": 1,
+        "pad": 3,
+        "mode": "suffix",
+        "separator": "_",
+        "reset_per_dir": true
+      },
+      "enabled": true,
+      "apply_to": null,
+      "only_if_glob": null
+    },
+    {
+      "params": {
+        "type": "cleanup",
+        "trim": true,
+        "collapse_spaces": true,
+        "space_replacement": "_",
+        "strip_forbidden": true,
+        "strip_accents": false,
+        "normalize_nfc": true
+      },
+      "enabled": true,
+      "apply_to": null,
+      "only_if_glob": null
+    }
+  ]
+}

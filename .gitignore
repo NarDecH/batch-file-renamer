@@ -1,0 +1,5 @@
+rustup-init.exe
+renamer/node_modules/
+renamer/dist/
+renamer/src-tauri/target/
+renamer/src-tauri/gen/
