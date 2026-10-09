@@ -2,7 +2,7 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
-## [0.2.0] — 2026-10-08
+## [0.2.0] — 2026-10-09
 
 ### Added
 - **Native folder picker** ในหน้าสแกน ผ่าน `tauri-plugin-dialog`
@@ -23,11 +23,14 @@
 - **Virtual preview table:** วางแถวที่มองเห็นตามตำแหน่ง scroll เพื่อไม่ให้แถวซ้อนกันเมื่อเลื่อน
 - **Preview HTML safety:** escape ชื่อไฟล์ก่อนแสดง diff ด้วย HTML
 - **Performance:** กฎ Regex/Replace(regex) compile ซ้ำทุกไฟล์ → เพิ่ม RegexCache พรีวิว 10k ไฟล์เร็วขึ้น **54×** (3,270 ms → 60.6 ms)
+- **Performance (executor):** collision check O(n²) → O(1) map lookup, dependency sort O(n³) → Kahn topological O(n) — execute 10k ไฟล์ **4.23 s → 2.72 s (−36%)**
+- **Performance (journal):** เปลี่ยนจากเขียน JSON ทั้งไฟล์ทุก flush → append-only JSONL (เขียนเฉพาะรายการใหม่) ลด disk writes ใหญ่ ตอน crash ยังอ่านกลับได้ (torn-tail tolerant)
+- **Performance (rename):** ไฟล์ที่ไม่เกี่ยวกัน rename ขนานด้วย rayon — chain/cycle ยังวิ่งแบบเรียงลำดับพร้อม temp-name เหมือนเดิม; เพิ่ม acceptance test 500 ไฟล์ขนาน + mixed batch
 - **Cycle rename:** การสลับชื่อไฟล์ A↔B ล้มเหลวเพราะเช็คปลายทางบนดิสก์บังการ rename และรอบเปลี่ยนชื่อ temp กลับหา item ไม่เจอ — แก้ทั้งสองจุดใน executor
 - **Numbering ในโหมด Full:** เลขรันเคยแทรกหลังนามสกุล (`file.jpg_001`) → แทรกก่อนนามสกุลเสมอ
 - **Frontend/serde mismatch:** พารามิเตอร์กฎจาก UI เปลี่ยนเป็น snake_case ให้ตรงกับ Rust enum
 
-## [0.1.0] — 2026-10-08
+## [0.1.0] — 2026-10-09
 
 ### Added
 - Core engine (Rust): สแกนขนาน (jwalk), กฎ 14 ประเภท grapheme-aware, validator, executor จัดการ chain/cycle, journal write-ahead + Undo ข้าม restart

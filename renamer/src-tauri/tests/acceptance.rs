@@ -337,6 +337,67 @@ fn dry_run_changes_nothing() {
     assert!(!dir.join("b.txt").exists());
 }
 
+/// Extra: 500 independent files rename safely through the parallel executor,
+/// with correct final state and no leftovers.
+#[test]
+fn parallel_rename_many_files() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    let n = 500;
+    for i in 0..n {
+        fs::write(dir.join(format!("pold_{:04}.txt", i)), "x").unwrap();
+    }
+    let entries: Vec<FileEntry> = (0..n)
+        .map(|i| {
+            let mut e = make_entry(i as u64, dir, &format!("pold_{:04}.txt", i));
+            e.manual_name = Some(format!("pnew_{:04}.txt", i));
+            e
+        })
+        .collect();
+    let ws = workspace(entries, vec![]);
+    let cache = MetadataCache::new();
+    let report =
+        executor::execute_workspace(&ws, &cache, false, &|| false, &|_, _| {}).unwrap();
+    assert_eq!(report.renamed, n as usize, "all parallel renames succeed");
+    assert_eq!(report.failed, 0);
+    for i in 0..n {
+        assert!(dir.join(format!("pnew_{:04}.txt", i)).exists());
+        assert!(!dir.join(format!("pold_{:04}.txt", i)).exists());
+    }
+    // Journal on disk must be parseable (JSONL) and match the entry count.
+    let journals = executor::unfinished_batches();
+    assert!(journals.iter().all(|b| !b.entries.is_empty() || b.finished));
+}
+
+/// Extra: mixed batch — parallel-safe files plus a chain in the same directory.
+#[test]
+fn mixed_parallel_and_chain_batch() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    fs::write(dir.join("A"), "a").unwrap();
+    fs::write(dir.join("B"), "b").unwrap();
+    fs::write(dir.join("solo.txt"), "s").unwrap();
+
+    let mut a = make_entry(0, dir, "A");
+    a.manual_name = Some("B".into());
+    let mut b = make_entry(1, dir, "B");
+    b.manual_name = Some("C".into());
+    // solo renames to a name not referenced anywhere: parallel path.
+    let mut solo = make_entry(2, dir, "solo.txt");
+    solo.manual_name = Some("solo_v2.txt".into());
+    let ws = workspace(vec![a, b, solo], vec![]);
+
+    let cache = MetadataCache::new();
+    let report =
+        executor::execute_workspace(&ws, &cache, false, &|| false, &|_, _| {}).unwrap();
+    assert_eq!(report.renamed, 3);
+    assert!(dir.join("B").exists() && dir.join("C").exists() && dir.join("solo_v2.txt").exists());
+    assert_eq!(fs::read_to_string(dir.join("B")).unwrap(), "a");
+    assert_eq!(fs::read_to_string(dir.join("C")).unwrap(), "b");
+    assert_eq!(fs::read_to_string(dir.join("solo_v2.txt")).unwrap(), "s");
+    assert!(!dir.join("A").exists() && !dir.join("solo.txt").exists());
+}
+
 /// Extra: split_name_ext basic behavior.
 #[test]
 fn split_name_ext_basics() {

@@ -11,6 +11,7 @@ use crate::core::models::{
 };
 use crate::core::preview::{build_preview, split_name_ext};
 use crate::core::metadata::MetadataCache;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -97,7 +98,7 @@ pub fn execute(ctx: &ExecuteContext) -> Result<ExecuteReport, String> {
         ctx.dry_run
     );
 
-    // Write-ahead journal
+    // Write-ahead journal (JSONL: header line + one append line per entry)
     let journal_path = journal_file(&report.batch_id);
     let mut journal = JournalBatch {
         batch_id: report.batch_id.clone(),
@@ -105,17 +106,109 @@ pub fn execute(ctx: &ExecuteContext) -> Result<ExecuteReport, String> {
         entries: Vec::with_capacity(order.len()),
         finished: false,
     };
-    write_journal(&journal_path, &journal)?;
+    // Header line only; entries are appended line-by-line below (O(1) each).
+    std::fs::write(&journal_path, format!("{}\n", journal_header(&journal)?))
+        .map_err(|e| e.to_string())?;
+    let mut journal_flushed: usize = 0; // already-flushed entry count
 
     // Execute
     let mut done: HashMap<(String, String), PathBuf> = HashMap::new(); // (parent, old) -> current path
     let mut temp_final: Vec<(PathBuf, String)> = Vec::new(); // temp path -> final target name
     let mut executed: Vec<JournalEntry> = Vec::new();
     let mut failures: Vec<FailureItem> = Vec::new();
-    // Count of unflushed journal entries (batched writes, see below).
+    // Index of entries not yet appended to the JSONL journal.
     let mut journal_dirty: usize = 0;
 
-    for (progress_idx, &plan_idx) in order.iter().enumerate() {
+    // Split the work list into parallelizable items (no chain/cycle dependency,
+    // destination is definitive) and sequential items (chains/cycles need the
+    // "free the name first" ordering and temp-name handling).
+    let mut parallel_idx: Vec<usize> = Vec::new();
+    let mut serial_idx: Vec<usize> = Vec::new();
+    for &idx in &order {
+        let item = plan[idx];
+        let target = item.resolved_name.clone().unwrap_or_else(|| item.new_name.clone());
+        let claimed = pending_sources
+            .get(&(item.parent.clone(), target.clone()))
+            .is_some_and(|sources| sources.iter().any(|&ix| plan[ix].id != item.id));
+        if !(ctx.cancelled)() && claimed {
+            serial_idx.push(idx);
+        } else if (ctx.cancelled)() {
+            // Preserve the original behaviour: cancelled batches bail out below.
+            serial_idx.push(idx);
+        } else {
+            parallel_idx.push(idx);
+        }
+    }
+
+    // --- Parallel pass over independent items (owns its destination name) ---
+    if !parallel_idx.is_empty() {
+        let results: Vec<(usize, Result<(), String>)> = {
+            let plan_ref = &plan;
+            parallel_idx
+                .par_iter()
+                .map(|&idx| {
+                    let item = plan_ref[idx];
+                    let parent_path = PathBuf::from(&item.parent);
+                    let from = parent_path.join(&item.old_name);
+                    let target_name =
+                        item.resolved_name.clone().unwrap_or_else(|| item.new_name.clone());
+                    let to = parent_path.join(&target_name);
+                    let outcome = if to.exists() && !same_file_ignoring_case(&from, &to) {
+                        Err("destination already exists".to_string())
+                    } else {
+                        do_rename(&from, &to)
+                    };
+                    (idx, outcome)
+                })
+                .collect()
+        };
+        // Integrate results in stable order: journal, progress, accounting.
+        for (progress_pos, (idx, outcome)) in results.into_iter().enumerate() {
+            let item = plan[idx];
+            let parent_path = PathBuf::from(&item.parent);
+            let from = parent_path.join(&item.old_name);
+            let target_name = item.resolved_name.clone().unwrap_or_else(|| item.new_name.clone());
+            let to = parent_path.join(&target_name);
+            match outcome {
+                Ok(()) => {
+                    log::debug!("renamed (parallel): {} -> {}", from.display(), to.display());
+                    let entry = JournalEntry {
+                        from: from.to_string_lossy().into_owned(),
+                        to: to.to_string_lossy().into_owned(),
+                        was_temp: false,
+                        done: true,
+                    };
+                    executed.push(entry);
+                    journal.entries.push(executed.last().unwrap().clone());
+                    journal_dirty += 1;
+                    if journal_dirty >= 20 {
+                        let _ = append_journal(&journal_path, &journal, journal_flushed);
+                        journal_flushed = journal.entries.len();
+                    }
+                    report.renamed += 1;
+                    done.insert((item.parent.clone(), item.old_name.clone()), to.clone());
+                }
+                Err(e) => {
+                    log::error!("rename failed: {} -> {}: {}", from.display(), to.display(), e);
+                    failures.push(FailureItem {
+                        from: from.to_string_lossy().into_owned(),
+                        to: to.to_string_lossy().into_owned(),
+                        error: e,
+                    });
+                    report.failed += 1;
+                }
+            }
+            (ctx.progress)(progress_pos + 1, total);
+        }
+    }
+    let _ = append_journal(&journal_path, &journal, journal_flushed);
+    journal_flushed = journal.entries.len();
+    // --- Sequential pass: chains/cycles need strict ordering + temp names ---
+    let serial_total = parallel_idx.len() + serial_idx.len();
+    for (progress_idx, &plan_idx) in serial_idx.iter().enumerate() {
+        // Progress offset so serial items continue after the parallel pass.
+        let progress_idx = progress_idx + parallel_idx.len();
+        let _ = serial_total;
         if (ctx.cancelled)() {
             // Roll back what was done so far so nothing is left half-renamed
             rollback(&executed);
@@ -194,12 +287,12 @@ pub fn execute(ctx: &ExecuteContext) -> Result<ExecuteReport, String> {
                 };
                 executed.push(entry);
                 journal.entries.push(executed.last().unwrap().clone());
-                // Batch journal writes: every entry O(n²) disk writes was the
-                // journal bottleneck on large batches. Flush every 20 ops keeps
-                // crash-recovery granularity while cutting writes 20x.
+                // Append-only JSONL: flush every 20 entries keeps crash-recovery
+                // granularity while each flush costs only the new lines (O(delta)).
                 journal_dirty += 1;
                 if journal_dirty >= 20 {
-                    let _ = write_journal(&journal_path, &journal);
+                    let _ = append_journal(&journal_path, &journal, journal_flushed);
+                    journal_flushed = journal.entries.len();
                     journal_dirty = 0;
                 }
                 report.renamed += 1;
@@ -248,7 +341,7 @@ pub fn execute(ctx: &ExecuteContext) -> Result<ExecuteReport, String> {
     }
     // Final flush ensures the journal on disk reflects all completed work even
     // when the batched threshold (20) was not hit exactly.
-    let _ = write_journal(&journal_path, &journal);
+    let _ = append_journal(&journal_path, &journal, journal_flushed);
 
     report.failures.extend(failures);
     journal.finished = true;
@@ -388,11 +481,9 @@ pub fn unfinished_batches() -> Vec<JournalBatch> {
     for entry in rd.flatten() {
         let p = entry.path();
         if p.extension().and_then(|e| e.to_str()) == Some("json") {
-            if let Ok(content) = std::fs::read_to_string(&p) {
-                if let Ok(batch) = serde_json::from_str::<JournalBatch>(&content) {
-                    if !batch.finished && !batch.entries.is_empty() {
-                        out.push(batch);
-                    }
+            if let Ok(batch) = read_journal(&p) {
+                if !batch.finished && !batch.entries.is_empty() {
+                    out.push(batch);
                 }
             }
         }
@@ -405,8 +496,7 @@ pub fn unfinished_batches() -> Vec<JournalBatch> {
 pub fn undo_batch(batch_id: &str) -> Result<(usize, usize, Vec<String>), String> {
     log::info!("undo start: batch={}", batch_id);
     let path = journal_file(batch_id);
-    let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let mut batch: JournalBatch = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    let mut batch = read_journal(&path)?;
 
     let mut undone = 0;
     let mut skipped = 0;
@@ -452,19 +542,67 @@ pub fn undo_batch(batch_id: &str) -> Result<(usize, usize, Vec<String>), String>
 
     // Mark as finished so it is not re-offered for undo after a crash
     batch.finished = true;
-    let _ = std::fs::write(&path, serde_json::to_string(&batch).unwrap_or_default());
+    // Rewrite the JSONL with the updated header (finished=true); entries stay.
+    let header = journal_header(&batch)?;
+    let mut out = header;
+    out.push('\n');
+    for e in &batch.entries {
+        out.push_str(&serde_json::to_string(e).unwrap_or_default());
+        out.push('\n');
+    }
+    let _ = std::fs::write(&path, out);
 
     Ok((undone, skipped, errors))
 }
 
-/// Write the current journal state to disk (write-ahead).
-fn write_journal(path: &Path, batch: &JournalBatch) -> Result<(), String> {
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+/// Existing JSONL journal: read header + all appended entries.
+fn read_journal(path: &Path) -> Result<JournalBatch, String> {
+    let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let mut lines = content.lines();
+    let mut batch: JournalBatch = serde_json::from_str(
+        lines.next().ok_or_else(|| "empty journal".to_string())?,
+    )
+    .map_err(|e| e.to_string())?;
+    for line in lines {
+        if line.trim().is_empty() {
+            continue;
+        }
+        match serde_json::from_str::<JournalEntry>(line) {
+            Ok(entry) => batch.entries.push(entry),
+            // Torn tail from a crash mid-append: rest is unreliable, stop here.
+            Err(_) => break,
+        }
     }
-    let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, serde_json::to_string(batch).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-    std::fs::rename(&tmp, path).map_err(|e| e.to_string())
+    Ok(batch)
+}
+
+/// JSONL header line: batch metadata, entries appended separately.
+fn journal_header(batch: &JournalBatch) -> Result<String, String> {
+    let compact = JournalBatch {
+        batch_id: batch.batch_id.clone(),
+        created_at_ms: batch.created_at_ms,
+        entries: Vec::new(),
+        finished: batch.finished,
+    };
+    serde_json::to_string(&compact).map_err(|e| e.to_string())
+}
+
+/// Append new journal entries to the JSONL file (O(new entries), not O(all)).
+fn append_journal(path: &Path, batch: &JournalBatch, from_index: usize) -> Result<(), String> {
+    if from_index >= batch.entries.len() {
+        return Ok(());
+    }
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|e| e.to_string())?;
+    for e in &batch.entries[from_index..] {
+        let line = serde_json::to_string(e).map_err(|e| e.to_string())?;
+        writeln!(file, "{}", line).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 fn finalize_journal(_path: &Path, _batch: &JournalBatch, _executed: Vec<JournalEntry>) {
