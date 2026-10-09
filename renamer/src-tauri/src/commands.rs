@@ -188,7 +188,7 @@ pub async fn cancel_rename(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn undo_last(state: State<'_, AppState>) -> Result<String, String> {
+pub async fn undo_last() -> Result<String, String> {
     let batch_id = undo_store::last_batch_id().ok_or("nothing to undo")?;
     let (undone, skipped, errors) = executor::undo_batch(&batch_id)?;
     Ok(format!("undone={}, skipped={}, errors={:?}", undone, skipped, errors))

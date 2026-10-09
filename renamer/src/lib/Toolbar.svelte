@@ -2,7 +2,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { t, setLang, setTheme, ui } from "../i18n.svelte.js";
 
-  let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), onScan, scanning } = $props();
+  let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), onSettingsChanged, onScan, scanning } = $props();
 
   async function browse() {
     const picked = await open({ directory: true, multiple: false, title: t("scanPath") });
@@ -11,31 +11,31 @@
 </script>
 
 <div class="bar">
-  <label>{t("scanPath")}</label>
-  <input class="path" placeholder="C:\Users\..." bind:value={scanPath} />
-  <button on:click={browse}>…</button>
+  <label for="scan-path">{t("scanPath")}</label>
+  <input id="scan-path" class="path" placeholder="C:\Users\..." bind:value={scanPath} />
+  <button onclick={browse}>…</button>
   <label class="chk"><input type="checkbox" bind:checked={recursive} /> {t("recursive")}</label>
   <input class="filter" placeholder={t("filter")} bind:value={filterGlobs} />
-  <button class="primary" on:click={onScan} disabled={scanning}>{t("scan")}</button>
+  <button class="primary" onclick={onScan} disabled={scanning}>{t("scan")}</button>
 
-  <select bind:value={applyTo} title={t("applyTo")}>
+  <select bind:value={applyTo} onchange={() => onSettingsChanged?.()} title={t("applyTo")}>
     <option value="name">name</option>
     <option value="extension">extension</option>
     <option value="full">name + extension</option>
   </select>
 
-  <select bind:value={conflictStrategy} title={t("conflict")}>
+  <select bind:value={conflictStrategy} onchange={() => onSettingsChanged?.()} title={t("conflict")}>
     <option value="block">{t("strategyBlock")}</option>
     <option value="auto_suffix">{t("strategyAuto")}</option>
     <option value="skip">{t("strategySkip")}</option>
   </select>
 
   <span class="spacer"></span>
-  <select on:change={(e) => setLang(e.target.value)} value={ui.lang} title={t("language")}>
+  <select onchange={(e) => setLang(e.target.value)} value={ui.lang} title={t("language")}>
     <option value="th">ไทย</option>
     <option value="en">English</option>
   </select>
-  <select on:change={(e) => setTheme(e.target.value)} value={ui.theme} title={t("theme")}>
+  <select onchange={(e) => setTheme(e.target.value)} value={ui.theme} title={t("theme")}>
     <option value="dark">🌙 dark</option>
     <option value="light">☀️ light</option>
   </select>

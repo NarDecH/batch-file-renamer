@@ -28,8 +28,8 @@
   {/if}
 
   <span class="spacer"></span>
-  <button class="undo" on:click={onUndo} disabled={renaming}>↩ {t("undo")} (Ctrl+Z)</button>
-  <button class="rename" on:click={onRename} disabled={renaming || summary.ready + summary.warnings === 0}>
+  <button class="undo" onclick={onUndo} disabled={renaming}>↩ {t("undo")} (Ctrl+Z)</button>
+  <button class="rename" onclick={onRename} disabled={renaming || summary.ready + summary.warnings === 0}>
     ▶ {t("rename")} (Ctrl+Enter)
   </button>
 </div>

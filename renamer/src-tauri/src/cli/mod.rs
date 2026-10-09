@@ -8,10 +8,10 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(
-    name = "renamer",
+    name = "renamer-cli",
     version,
     about = "Batch file renamer - preview by default, use --apply to execute",
-    override_usage = "renamer [OPTIONS] <COMMAND>"
+    override_usage = "renamer-cli [OPTIONS] <COMMAND>"
 )]
 pub struct Cli {
     /// Operate in dry-run mode (default; kept for explicitness)

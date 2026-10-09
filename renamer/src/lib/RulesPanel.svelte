@@ -150,92 +150,92 @@
   <div class="head">
     <strong>{t("rules")}</strong>
     <span class="spacer"></span>
-    <button on:click={savePreset}>{t("savePreset")}</button>
-    <button on:click={loadPreset}>{t("presets")}</button>
+    <button onclick={savePreset}>{t("savePreset")}</button>
+    <button onclick={loadPreset}>{t("presets")}</button>
   </div>
 
-  <select class="add" on:change={addRule}>
+  <select class="add" onchange={addRule}>
     <option value="">+ {t("addRule")}</option>
     {#each RULE_TYPES as rt}
       <option value={rt.id}>{rt.label}</option>
     {/each}
   </select>
-  <button class="import-btn" on:click={importList}>📂 Import List จาก CSV/TXT</button>
+  <button class="import-btn" onclick={importList}>📂 Import List จาก CSV/TXT</button>
 
   {#each rules as rule, i}
     <div class="rule" class:disabled={!rule.enabled}>
       <div class="rule-head">
-        <input type="checkbox" checked={rule.enabled} on:change={() => toggle(i)} />
+        <input type="checkbox" checked={rule.enabled} onchange={() => toggle(i)} />
         <strong>{RULE_TYPES.find((r) => r.id === rule.params.type)?.label ?? rule.params.type}</strong>
         {#if rule.params.type === "import_list"}
           <span class="dim">{rule.params.mapping.length} คู่ / {rule.params.ordered_names.length} ชื่อ</span>
         {/if}
         <span class="spacer"></span>
-        <button title="up" on:click={() => move(i, -1)}>↑</button>
-        <button title="down" on:click={() => move(i, 1)}>↓</button>
-        <button title="remove" on:click={() => removeRule(i)}>✕</button>
+        <button title="up" onclick={() => move(i, -1)}>↑</button>
+        <button title="down" onclick={() => move(i, 1)}>↓</button>
+        <button title="remove" onclick={() => removeRule(i)}>✕</button>
       </div>
       <div class="rule-body">
         {#if rule.params.type === "replace"}
-          <label>find <input bind:value={rule.params.find} on:input={changed} /></label>
-          <label>→ <input bind:value={rule.params.replace_with} on:input={changed} /></label>
-          <label><input type="checkbox" bind:checked={rule.params.case_sensitive} on:change={changed} /> case-sensitive</label>
-          <label><input type="checkbox" bind:checked={rule.params.use_regex} on:change={changed} /> regex</label>
+          <label>find <input bind:value={rule.params.find} oninput={changed} /></label>
+          <label>→ <input bind:value={rule.params.replace_with} oninput={changed} /></label>
+          <label><input type="checkbox" bind:checked={rule.params.case_sensitive} onchange={changed} /> case-sensitive</label>
+          <label><input type="checkbox" bind:checked={rule.params.use_regex} onchange={changed} /> regex</label>
         {:else if rule.params.type === "regex"}
-          <label>pattern <input bind:value={rule.params.pattern} on:input={changed} /></label>
-          <label>replace <input bind:value={rule.params.replacement} on:input={changed} /></label>
+          <label>pattern <input bind:value={rule.params.pattern} oninput={changed} /></label>
+          <label>replace <input bind:value={rule.params.replacement} oninput={changed} /></label>
         {:else if rule.params.type === "insert"}
-          <label>text <input bind:value={rule.params.text} on:input={changed} /></label>
-          <select bind:value={rule.params.at} on:change={changed}>
+          <label>text <input bind:value={rule.params.text} oninput={changed} /></label>
+          <select bind:value={rule.params.at} onchange={changed}>
             <option value="start">start</option><option value="end">end</option><option value="position">position</option>
           </select>
         {:else if rule.params.type === "remove"}
-          <select bind:value={rule.params.mode} on:change={changed}>
+          <select bind:value={rule.params.mode} onchange={changed}>
             <option value="chars">chars</option><option value="digits">digits</option>
             <option value="symbols">symbols</option><option value="spaces">spaces</option>
             <option value="brackets">brackets</option>
           </select>
           {#if rule.params.mode === "chars"}
-            <label>count <input type="number" bind:value={rule.params.count} on:input={changed} /></label>
+            <label>count <input type="number" bind:value={rule.params.count} oninput={changed} /></label>
           {/if}
         {:else if rule.params.type === "case"}
-          <select bind:value={rule.params.style} on:change={changed}>
+          <select bind:value={rule.params.style} onchange={changed}>
             <option value="upper">UPPER</option><option value="lower">lower</option>
             <option value="title">Title</option><option value="sentence">Sentence</option>
             <option value="camel">camelCase</option><option value="snake">snake_case</option>
             <option value="kebab">kebab-case</option>
           </select>
         {:else if rule.params.type === "numbering"}
-          <label>start <input type="number" bind:value={rule.params.start} on:input={changed} /></label>
-          <label>pad <input type="number" bind:value={rule.params.pad} on:input={changed} /></label>
-          <label>sep <input bind:value={rule.params.separator} on:input={changed} /></label>
+          <label>start <input type="number" bind:value={rule.params.start} oninput={changed} /></label>
+          <label>pad <input type="number" bind:value={rule.params.pad} oninput={changed} /></label>
+          <label>sep <input bind:value={rule.params.separator} oninput={changed} /></label>
         {:else if rule.params.type === "extension"}
-          <select bind:value={rule.params.action} on:change={changed}>
+          <select bind:value={rule.params.action} onchange={changed}>
             <option value="lowercase">lowercase</option><option value="set">set</option><option value="remove">remove</option>
           </select>
           {#if rule.params.action === "set"}
-            <label>ext <input bind:value={rule.params.extension} on:input={changed} /></label>
+            <label>ext <input bind:value={rule.params.extension} oninput={changed} /></label>
           {/if}
         {:else if rule.params.type === "date_time"}
-          <select bind:value={rule.params.source} on:change={changed}>
+          <select bind:value={rule.params.source} onchange={changed}>
             <option value="modified">modified</option><option value="created">created</option><option value="exif">EXIF</option>
           </select>
-          <label>format <input bind:value={rule.params.format} on:input={changed} /></label>
+          <label>format <input bind:value={rule.params.format} oninput={changed} /></label>
         {:else if rule.params.type === "metadata"}
-          <select bind:value={rule.params.field} on:change={changed}>
+          <select bind:value={rule.params.field} onchange={changed}>
             <option value="artist">artist</option><option value="title">title</option>
             <option value="album">album</option><option value="track">track</option>
             <option value="exif_camera">camera</option><option value="exif_size">size</option>
           </select>
         {:else if rule.params.type === "template"}
-          <label>template <input bind:value={rule.params.template} on:input={changed} /></label>
+          <label>template <input bind:value={rule.params.template} oninput={changed} /></label>
         {:else if rule.params.type === "cleanup"}
-          <label>space→ <input bind:value={rule.params.space_replacement} on:input={changed} /></label>
-          <label><input type="checkbox" bind:checked={rule.params.strip_forbidden} on:change={changed} /> forbidden</label>
+          <label>space→ <input bind:value={rule.params.space_replacement} oninput={changed} /></label>
+          <label><input type="checkbox" bind:checked={rule.params.strip_forbidden} onchange={changed} /> forbidden</label>
         {:else if rule.params.type === "swap"}
-          <label>delimiter <input bind:value={rule.params.delimiter} on:input={changed} /></label>
+          <label>delimiter <input bind:value={rule.params.delimiter} oninput={changed} /></label>
         {:else if rule.params.type === "hash"}
-          <select bind:value={rule.params.algo} on:change={changed}>
+          <select bind:value={rule.params.algo} onchange={changed}>
             <option value="md5">MD5</option><option value="sha1">SHA-1</option><option value="uuid">UUID</option>
           </select>
         {:else if rule.params.type === "import_list"}

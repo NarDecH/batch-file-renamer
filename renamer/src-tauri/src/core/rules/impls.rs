@@ -1,7 +1,7 @@
 //! Concrete rule implementations. All string surgery is grapheme-aware so
 //! Thai vowels/tone marks and emoji never get separated from their base.
 
-use super::pipeline::{glob_match, RuleContext, RuleParams};
+use super::pipeline::{RuleContext, RuleParams};
 use unicode_normalization::UnicodeNormalization;
 use unicode_segmentation::UnicodeSegmentation;
 

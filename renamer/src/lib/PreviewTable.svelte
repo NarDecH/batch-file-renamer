@@ -49,7 +49,7 @@
   }
 
   function highlightDiff(oldName, newName) {
-    if (oldName === newName) return newName;
+    if (oldName === newName) return escapeHtml(newName);
     // Simple char-level prefix/suffix diff highlight
     let i = 0;
     const min = Math.min(oldName.length, newName.length);
@@ -63,7 +63,17 @@
     const pre = newName.slice(0, i);
     const mid = newName.slice(i, newName.length - j);
     const post = newName.slice(newName.length - j);
-    return `${pre}<mark>${mid}</mark>${post}`;
+    return `${escapeHtml(pre)}<mark>${escapeHtml(mid)}</mark>${escapeHtml(post)}`;
+  }
+
+  function escapeHtml(value) {
+    return value.replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    })[char]);
   }
 
   function startEdit(item) {
@@ -78,10 +88,17 @@
     }
   }
 
-  function doclk(e) {
-    // Prevent XSS from highlightDiff html - escape first
-    return e;
+  function focusInput(node) {
+    node.focus();
   }
+
+  function handleEditKeydown(event, item) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      startEdit(item);
+    }
+  }
+
 </script>
 
 <div class="vp" bind:this={viewport} onscroll={onScroll}>
@@ -97,7 +114,7 @@
           <th style="width:150px">{t("modified")}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody style="transform: translateY({start * ROW_H}px)">
         {#each visible as item (item.id)}
           <tr class="row {statusClass(item.status)}" style="height:{ROW_H}px">
             <td class="status-cell">
@@ -112,12 +129,15 @@
                   oninput={(e) => (editValue = e.target.value)}
                   onkeydown={(e) => e.key === "Enter" && commitEdit(item)}
                   onblur={() => commitEdit(item)}
-                  autofocus
+                  use:focusInput
                 />
               {:else}
                 <span
+                  role="button"
+                  tabindex="0"
                   title={item.message || ""}
                   ondblclick={() => startEdit(item)}
+                  onkeydown={(e) => handleEditKeydown(e, item)}
                   >{@html highlightDiff(item.oldName, item.newName)}</span
                 >
               {/if}
@@ -173,7 +193,7 @@
     color: var(--muted);
     font-size: 12px;
   }
-  .st-ready .new-name mark {
+  :global(.st-ready .new-name mark) {
     background: color-mix(in srgb, var(--ok) 30%, transparent);
     color: inherit;
   }

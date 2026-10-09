@@ -50,24 +50,25 @@
   </figure>
 
   <h2><span class="no">🚀</span>เริ่มใช้ใน 30 วินาที</h2>
-  <pre><code># dev
+  <pre><code>  # dev (starts Vite and launches the GUI)
 cd renamer &amp;&amp; npm install
-npm run build &amp;&amp; cd src-tauri &amp;&amp; cargo run
+  npm run tauri dev
 
 # แจกจ่าย (ได้ NSIS + MSI installer)
 npm run tauri build
 
-# CLI
-renamer --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
-renamer --apply preview -f "D:\Photos" -r --include "*.jpg" -p photos
-renamer undo</code></pre>
+# CLI (run from src-tauri)
+cd src-tauri
+cargo run --bin renamer-cli -- --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
+cargo run --bin renamer-cli -- --apply preview -f "D:\Photos" -r --include "*.jpg" -p photos
+cargo run --bin renamer-cli -- undo</code></pre>
 
   <h2><span class="no">📄</span>เอกสารทั้งหมด</h2>
   <table>
     <tr><th>เอกสาร</th><th>เนื้อหา</th></tr>
-    <tr><td><a href="README.html">README</a></td><td>ฟีเจอร์ครบ, วิธีติดตั้ง, CLI, ตัวอย่างการใช้งาน 5 กรณี, ตารางเกณฑ์ยอมรับ</td></tr>
+    <tr><td><a href="README.html">README</a></td><td>ฟีเจอร์ครบ, วิธีติดตั้ง, CLI, วิธีรันทดสอบ frontend/Rust, ตัวอย่าง 5 กรณี, ตารางเกณฑ์ยอมรับ</td></tr>
     <tr><td><a href="RESEARCH.html">Research</a></td><td>เหตุผลการเลือก stack, บทเรียน benchmark 54×, การออกแบบความปลอดภัย, grapheme ภาษาไทย</td></tr>
-    <tr><td><a href="CHANGELOG.html">Changelog</a></td><td>ประวัติเวอร์ชัน 0.1.0 → 0.2.0</td></tr>
+    <tr><td><a href="CHANGELOG.html">Changelog</a></td><td>ประวัติเวอร์ชัน 0.1.0 → 0.2.0 รวมการแก้ GUI preview IPC และ regression tests</td></tr>
     <tr><td><a href="../AGENT.md">AGENT.md</a></td><td>คู่มือสำหรับ AI agent ที่จะมาแก้โค้ดต่อ</td></tr>
   </table>
 

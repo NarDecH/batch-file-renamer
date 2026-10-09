@@ -3,10 +3,11 @@
   import RulesPanel from "./lib/RulesPanel.svelte";
   import Toolbar from "./lib/Toolbar.svelte";
   import StatusBar from "./lib/StatusBar.svelte";
+  import { requestPreview } from "./lib/previewBridge.js";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
-  import { t, setLang, setTheme, ui } from "./i18n.svelte.js";
+  import { t, ui } from "./i18n.svelte.js";
 
   let items = [];
   let summary = { total: 0, ready: 0, unchanged: 0, warnings: 0, errors: 0 };
@@ -68,7 +69,7 @@
 
   export async function refreshPreview() {
     try {
-      const res = await invoke("preview");
+      const res = await requestPreview(invoke, { rules, conflictStrategy, applyTo });
       items = res.items;
       summary = { total: res.total, ready: res.ready, unchanged: res.unchanged, warnings: res.warnings, errors: res.errors };
     } catch (e) {
@@ -136,7 +137,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="app" data-theme={ui.theme}>
   <Toolbar
@@ -145,6 +146,7 @@
     bind:filterGlobs
     bind:applyTo
     bind:conflictStrategy
+    onSettingsChanged={schedulePreview}
     onScan={doScan}
     scanning={scanning}
   />

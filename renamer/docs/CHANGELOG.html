@@ -29,6 +29,7 @@
   <tr><td>⏳ Progress bar real-time</td><td>Rust ส่ง event <code>rename-progress</code> ทุก 50 รายการขึ้นแถบสถานะ</td></tr>
   <tr><td>📝 Log รายวัน</td><td><code>core/logger.rs</code> — ไฟล์ <code>logs/renamer-YYYY-MM-DD.log</code>, level ควบคุมด้วย <code>RENAMER_LOG=debug</code>, ใช้ร่วม GUI/CLI, ครอบสแกน/พรีวิว/rename/undo/rollback</td></tr>
   <tr><td>IPC ใหม่</td><td><code>parse_import_list</code>, <code>log_file_path</code></td></tr>
+  <tr><td>Frontend regression tests</td><td>ทดสอบการซิงก์กฎและตัวเลือกผ่าน IPC ก่อนพรีวิว และหยุดเมื่อ IPC ล้มเหลว</td></tr>
   <tr><td>Tauri capabilities</td><td>แก้ IPC โดน deny ตอน runtime</td></tr>
   <tr><td>เอกสาร + AGENT.md</td><td>docs/ ครบ Markdown + HTML + แผนภาพ SVG + index</td></tr>
 </table>
@@ -36,6 +37,11 @@
 <h3>แก้ (Fixed)</h3>
 <table>
   <tr><th>ปัญหา</th><th>ผล</th></tr>
+  <tr><td><code>cargo run</code> เปิด CLI แล้วออกด้วย exit code 2 แทน GUI</td><td class="ok">ตั้ง GUI เป็น binary หลักและแยก CLI เป็น <code>renamer-cli</code></td></tr>
+  <tr><td>เปิด GUI dev ด้วย <code>cargo run</code> แล้ว WebView แสดง <code>localhost:5173</code> refused</td><td class="ok">ใช้ <code>npm run tauri dev</code> เพื่อเริ่ม Vite ก่อนเปิด GUI</td></tr>
+  <tr><td>Rust compiler warnings จาก imports/variables/functions ที่ไม่ได้ใช้</td><td class="ok">เก็บ warnings ที่พบจาก build ให้หมด</td></tr>
+  <tr><td>GUI ไม่ได้ลงทะเบียน IPC สำหรับอัปเดตกฎและตัวเลือก และพรีวิวใช้ค่าเก่า</td><td class="ok">ลงทะเบียนคำสั่งและซิงก์ค่าก่อนพรีวิว; เปลี่ยนตัวเลือกแล้วพรีวิวอัปเดต</td></tr>
+  <tr><td>Virtual table ไม่จัดตำแหน่งแถวตาม scroll และชื่อไฟล์ถูกแทรกเป็น HTML โดยไม่ escape</td><td class="ok">จัดตำแหน่งแถวและ escape ชื่อก่อน render diff</td></tr>
   <tr><td>Regex compile ซ้ำทุกไฟล์ → เพิ่ม RegexCache</td><td class="ok">พรีวิว 10k เร็วขึ้น 54× (3,270 ms → 60.6 ms)</td></tr>
   <tr><td>สลับชื่อไฟล์ A↔B ล้มเหลว (เช็คปลายทางบัง + lookup temp ไม่เจอ)</td><td class="ok">swap ทำงานถูกต้อง มี test ครอบ</td></tr>
   <tr><td>Numbering แทรกเลขหลังนามสกุลในโหมด Full</td><td class="ok">แทรกก่อนนามสกุลเสมอ</td></tr>

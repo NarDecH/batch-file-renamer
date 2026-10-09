@@ -25,6 +25,8 @@
 - **Preset:** บันทึก/โหลดชุดกฎ + preset ในตัว (photos, music)
 - **i18n:** ไทย/อังกฤษ, ธีม Dark/Light, คีย์ลัด Ctrl+Enter / Ctrl+Z
 - **CLI:** ใช้ engine เดียวกับ GUI, dry-run เป็นค่าเริ่มต้น
+- **พรีวิวและ IPC:** ทุกครั้งที่คำนวณพรีวิว GUI จะซิงก์กฎ, conflict strategy และ apply-to ไปยัง Rust ก่อน; เปลี่ยนตัวเลือกแล้วพรีวิวอัปเดตอัตโนมัติ
+- **Regression tests ฝั่ง UI:** ทดสอบลำดับ IPC ก่อนพรีวิวและยืนยันว่า IPC ล้มเหลวแล้วไม่เรียกพรีวิวต่อ
 
 ![Safety](images/safety-pipeline.svg)
 
@@ -33,19 +35,20 @@
 ```bash
 cd renamer
 npm install
-npm run build
-cd src-tauri && cargo run     # โหมด dev
+npm run tauri dev              # เริ่ม Vite และเปิดแอป GUI พร้อมกัน
 ```
+
+อย่าใช้ `cargo run` สำหรับโหมดพัฒนา GUI โดยตรง เพราะไม่ได้เริ่ม Vite ที่ `localhost:5173` ซึ่ง Tauri ต้องใช้; หากต้องการ build frontend แยกให้ใช้ `npm run build`
 
 **Build แจกจ่าย:** `npm run tauri build` → installer อยู่ใน `src-tauri/target/release/bundle/`
 
 ## ใช้งาน CLI
 
 ```bash
-renamer --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
-renamer --apply     preview -f "D:\Music"  -r -p music
-renamer undo
-renamer presets
+cargo run --bin renamer-cli -- --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
+cargo run --bin renamer-cli -- --apply preview -f "D:\Music" -r -p music
+cargo run --bin renamer-cli -- undo
+cargo run --bin renamer-cli -- presets
 ```
 
 Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo · 2 สแกน/พรีวิวล้มเหลว · 3 rename บางรายการล้มเหลว
@@ -71,12 +74,23 @@ Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo 
 | 7 | ไทย/อีโมจิ ลบ 1 ตัวแรกไม่มีสระลอย | ✅ |
 | 8 | Preview 10k × 5 กฎ ≤ 200 ms | ✅ ~60 ms |
 
+## รันทดสอบ
+
+```bash
+cd renamer
+npm test          # frontend IPC/preview tests
+npm run build     # production build ของ frontend
+cd src-tauri
+cargo test        # Rust unit + acceptance tests (14 tests)
+cargo bench       # benchmark พรีวิว 10k ไฟล์ × 5 กฎ
+```
+
 ## Logging สำหรับดีบัก
 
 ไฟล์ log รายวันที่ `%APPDATA%/batch-renamer/logs/renamer-YYYY-MM-DD.log`
 
 ```bash
-RENAMER_LOG=debug renamer --dry-run preview -f "D:\Photos"   # โหมดละเอียด
+RENAMER_LOG=debug cargo run --bin renamer-cli -- --dry-run preview -f "D:\Photos"   # โหมดละเอียด
 ```
 
 บันทึก: เวลาสแกน/จำนวนไฟล์, เวลาพรีวิวแต่ละรอบ, ทุก rename (โหมด debug), ความล้มเหลว + สาเหตุ, undo ทุกไฟล์, การ rollback

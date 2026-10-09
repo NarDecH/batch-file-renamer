@@ -39,6 +39,7 @@
   <div class="card"><h3>นำเข้า</h3><p>native folder picker, recursive + กำหนดความลึก, กรอง wildcard/regex/ขนาด/วันที่, natural sort</p></div>
   <div class="card"><h3>กฎ 14 ประเภท</h3><p>Replace, Regex, Insert, Remove, Case, Numbering, Extension, Date/Time, Metadata, Template, Clean up, Swap, Import List (CSV/TXT), Hash/UUID</p></div>
   <div class="card"><h3>Live Preview</h3><p>ตาราง virtualized, ไฮไลต์ส่วนที่เปลี่ยน, สีสถานะ, แก้ชื่อมือได้ (ดับเบิลคลิก)</p></div>
+  <div class="card"><h3>พรีวิวและ IPC</h3><p>ซิงก์กฎและตัวเลือกไปยัง Rust ก่อนคำนวณพรีวิว; เปลี่ยนตัวเลือกแล้วพรีวิวอัปเดตอัตโนมัติ</p></div>
   <div class="card"><h3>ปลอดภัย</h3><p>ชื่อซ้ำ/ชื่อสงวน/อักขระต้องห้าม, conflict 3 โหมด, journal write-ahead, rollback อัตโนมัติ</p></div>
   <div class="card"><h3>Undo + Log</h3><p>ย้อนหลังข้าม restart + log รายวัน (<code>RENAMER_LOG=debug</code>)</p></div>
   <div class="card"><h3>Preset / i18n / CLI</h3><p>บันทึกชุดกฎ, ไทย/อังกฤษ, Dark/Light, คีย์ลัด, CLI dry-run ค่าเริ่มต้น</p></div>
@@ -52,17 +53,17 @@
 <h2><span class="no">03</span>ติดตั้งและรัน</h2>
 <pre><code>cd renamer
 npm install
-npm run build
-cd src-tauri &amp;&amp; cargo run      # โหมด dev
+npm run tauri dev      # เริ่ม Vite และเปิดแอป GUI พร้อมกัน
 
 # Build แจกจ่าย → src-tauri/target/release/bundle/
 npm run tauri build</code></pre>
+<p>อย่าใช้ <code>cargo run</code> สำหรับโหมดพัฒนา GUI โดยตรง เพราะไม่ได้เริ่ม Vite ที่ <code>localhost:5173</code> ซึ่ง Tauri ต้องใช้; หากต้องการ build frontend แยกให้ใช้ <code>npm run build</code></p>
 
 <h2><span class="no">04</span>ใช้งาน CLI</h2>
-<pre><code>renamer --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
-renamer --apply     preview -f "D:\Music"  -r -p music
-renamer undo
-renamer presets</code></pre>
+<pre><code>cargo run --bin renamer-cli -- --dry-run preview -f "D:\Photos" -r --include "*.jpg" -p photos
+cargo run --bin renamer-cli -- --apply preview -f "D:\Music" -r -p music
+cargo run --bin renamer-cli -- undo
+cargo run --bin renamer-cli -- presets</code></pre>
 <p>Exit codes: <code>0</code> สำเร็จ · <code>1</code> ไม่มีอะไรให้ undo · <code>2</code> สแกน/พรีวิวล้มเหลว · <code>3</code> rename บางรายการล้มเหลว</p>
 
 <h2><span class="no">05</span>ตัวอย่างการใช้งานจริง 5 กรณี</h2>
@@ -88,9 +89,18 @@ renamer presets</code></pre>
   <tr><td>8</td><td>Preview 10k × 5 กฎ ≤ 200 ms</td><td class="ok">✅ ~60 ms</td></tr>
 </table>
 
-<h2><span class="no">07</span>Logging สำหรับดีบัก</h2>
+<h2><span class="no">07</span>รันทดสอบ</h2>
+<pre><code>cd renamer
+npm test          # frontend IPC/preview regression tests (2 tests)
+npm run build     # production frontend build
+cd src-tauri
+cargo test        # Rust unit + acceptance tests (14 tests)
+cargo bench       # preview 10k ไฟล์ × 5 กฎ</code></pre>
+<p>Frontend tests ตรวจลำดับการส่งกฎและตัวเลือกผ่าน IPC ก่อนเรียกพรีวิว และยืนยันว่าเมื่อ IPC ล้มเหลวจะไม่เรียกพรีวิวต่อ</p>
+
+<h2><span class="no">08</span>Logging สำหรับดีบัก</h2>
 <p>ไฟล์ log รายวันที่ <code>%APPDATA%/batch-renamer/logs/renamer-YYYY-MM-DD.log</code></p>
-<pre><code>RENAMER_LOG=debug renamer --dry-run preview -f "D:\Photos"</code></pre>
+<pre><code>RENAMER_LOG=debug cargo run --bin renamer-cli -- --dry-run preview -f "D:\Photos"</code></pre>
 <p>บันทึก: เวลาสแกน/จำนวนไฟล์ · เวลาพรีวิวแต่ละรอบ · ทุก rename (โหมด debug) · ความล้มเหลว + สาเหตุ · undo ทุกไฟล์ · การ rollback</p>
 
 </main>

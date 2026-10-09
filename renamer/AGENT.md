@@ -5,7 +5,7 @@
 **Batch File Renamer** — โปรแกรมเปลี่ยนชื่อไฟล์/โฟลเดอร์จำนวนมาก ปลอดภัยต่อข้อมูลเป็นอันดับหนึ่ง
 - **Core engine:** Rust (`src-tauri/src/core/`) — ล้วน ๆ ไม่มี UI import ใช้ร่วมกันโดย GUI และ CLI
 - **GUI:** Tauri 2 + Svelte 5 (`src/`)
-- **CLI:** Rust binary เดียวกัน (`src-tauri/src/cli/`) — `renamer preview ...`, dry-run เป็นค่าเริ่มต้น
+- **CLI:** Rust binary แยก (`renamer-cli`, `src-tauri/src/cli/`) — dry-run เป็นค่าเริ่มต้น
 - **แพลตฟอร์มเป้าหมายหลัก:** Windows (โค้ดเขียน cross-platform ไว้)
 
 ## คำสั่งที่ใช้บ่อย
@@ -14,10 +14,13 @@
 cd renamer
 npm install              # ครั้งแรก
 npm run build            # build frontend → dist/
+npm run tauri dev        # เปิด GUI dev พร้อมเริ่ม Vite
+npm test                 # frontend IPC/preview regression tests
 cd src-tauri
 cargo check              # ตรวจ compile เร็ว
 cargo test               # unit + acceptance tests (14 tests)
 cargo bench              # preview benchmark (10k ไฟล์ × 5 กฎ)
+# อย่าใช้ cargo run เปิด GUI dev: ต้องเริ่ม Vite; CLI: cargo run --bin renamer-cli -- --help
 cd .. && npm run tauri build   # สร้าง installer NSIS/MSI
 ```
 
@@ -63,6 +66,7 @@ src/                    # Svelte — param ของกฎต้องเป็�
 
 ## Testing
 
+- Frontend IPC/preview tests อยู่ใน `src/lib/previewBridge.test.js`; รันจาก `renamer/` ด้วย `npm test`
 - Test ทุกกฎใหม่ + ทุกแก้ไข executor ใน `tests/acceptance.rs`
 - Benchmark อยู่ใน `benches/preview_bench.rs` — ห้ามให้ preview 10k ช้ากว่า ~200 ms
 - `cargo test` ต้องผ่าน 100% ก่อนเสนองาน

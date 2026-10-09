@@ -1,10 +1,7 @@
 //! Preview builder: runs the pipeline over the working set and validates all
 //! planned renames, using in-memory name sets instead of disk checks.
 
-use crate::core::models::{
-    ConflictStrategy, FileEntry, ItemStatus, NamePart, PlanItem, TargetScope, Workspace,
-};
-use crate::core::natsort::natural_cmp;
+use crate::core::models::{ConflictStrategy, ItemStatus, NamePart, PlanItem, Workspace};
 use crate::core::rules::pipeline::{apply_pipeline, validate_rule, RuleContext};
 use crate::core::metadata::MetadataCache;
 use crate::core::rules::regex_cache::RegexCache;
@@ -39,11 +36,6 @@ pub fn build_preview(ws: &Workspace, metadata_cache: &MetadataCache) -> Vec<Plan
     // built from the scanned set itself, so it covers the working set's dirs.
     // Case-insensitivity depends on the filesystem.
     let case_insensitive = cfg!(windows) || cfg!(target_os = "macos");
-
-    let scope = |is_dir: bool| match ws.apply_to {
-        _ => true,
-    };
-    let _ = scope;
 
     let mut items: Vec<PlanItem> = Vec::with_capacity(ws.entries.len());
 
@@ -159,7 +151,7 @@ fn validate_and_resolve(ws: &Workspace, items: &mut [PlanItem], case_insensitive
         })
         .collect();
 
-    for (_, mut indexes) in seen {
+    for (_, indexes) in seen {
         if indexes.len() < 2 {
             continue;
         }

@@ -13,6 +13,7 @@ renamer/
 │       ├── Toolbar.svelte  # สแกน, scope, conflict strategy, ธีม
 │       ├── RulesPanel.svelte  # เพิ่ม/ลบ/สลับกฎ 14 ประเภท + preset
 │       ├── PreviewTable.svelte# Virtual list + ไฮไลต์ส่วนที่เปลี่ยน
+│       ├── previewBridge.js # ซิงก์กฎ/ตัวเลือกกับ Rust ก่อนขอพรีวิว
 │       └── StatusBar.svelte# สรุปจำนวน + Rename/Undo
 ├── src-tauri/
 │   ├── src/core/           # Engine ล้วน ไม่ import UI
@@ -40,10 +41,10 @@ renamer/
 ```bash
 cd renamer
 npm install
-npm run build          # สร้าง dist/
-cd src-tauri
-cargo run              # เปิดแอป GUI (หรือ npm run tauri dev ที่ root)
+npm run tauri dev      # เริ่ม Vite และเปิดแอป GUI พร้อมกัน
 ```
+
+อย่าใช้ `cargo run` สำหรับโหมดพัฒนา GUI โดยตรง เพราะคำสั่งนี้ไม่เริ่ม Vite ที่ `localhost:5173` ซึ่ง Tauri ต้องใช้; หากต้องการ build frontend แยกให้ใช้ `npm run build`
 
 ## วิธี build แจกจ่าย
 
@@ -52,17 +53,17 @@ cd renamer
 npm run tauri build    # ได้ .msi / NSIS installer ใน src-tauri/target/release/bundle/
 ```
 
-ตัว exe ปกติอยู่ที่ `renamer/src-tauri/target/release/renamer.exe` (ใช้เป็น GUI หรือ CLI ได้จากไฟล์เดียวกัน)
+ตัว GUI exe ปกติอยู่ที่ `renamer/src-tauri/target/release/renamer.exe`; CLI เป็น binary แยก (`renamer-cli`) สร้างและรันใน dev ด้วย `cargo run --bin renamer-cli -- --help`
 
 ## ใช้งาน CLI
 
 ค่าเริ่มต้นคือ dry-run ต้องใส่ `--apply` จึงเปลี่ยนชื่อจริง:
 
 ```bash
-renamer preview -f "D:\Photos" -r --include "*.jpg" --include "*.png" -p photos
-renamer preview -f "D:\Music" -r --apply -p music
-renamer undo
-renamer presets
+cargo run --bin renamer-cli -- preview -f "D:\Photos" -r --include "*.jpg" --include "*.png" -p photos
+cargo run --bin renamer-cli -- --apply preview -f "D:\Music" -r -p music
+cargo run --bin renamer-cli -- undo
+cargo run --bin renamer-cli -- presets
 ```
 
 Exit codes: `0` สำเร็จ, `1` ไม่มีอะไรให้ undo, `2` สแกน/พรีวิวผิดพลาด, `3` เปลี่ยนชื่อบางรายการล้มเหลว
@@ -89,10 +90,16 @@ Exit codes: `0` สำเร็จ, `1` ไม่มีอะไรให้ und
 ## การทดสอบ
 
 ```bash
+cd renamer
+npm test          # frontend IPC/preview regression tests
+npm run build     # ตรวจ production frontend build
+
 cd renamer/src-tauri
-cargo test        # 14 tests: เกณฑ์ยอมรับ 1-7 + validation + chain + dry-run
+cargo test        # 14 Rust tests: unit + acceptance (เกณฑ์ 1-7, validation, chain, dry-run)
 cargo bench       # preview 10,000 ไฟล์ × 5 กฎ (ผลล่าสุด ~60 ms)
 ```
+
+Frontend tests ตรวจว่ากฎและตัวเลือกปัจจุบันถูกส่งผ่าน IPC ก่อนเรียกพรีวิว และยืนยันว่าเมื่อซิงก์ IPC ล้มเหลวจะไม่เรียกพรีวิวต่อ
 
 ## เกณฑ์ยอมรับ (ผลจริง)
 

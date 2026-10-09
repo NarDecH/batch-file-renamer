@@ -6,7 +6,10 @@ pub mod core;
 pub fn run() {
     // Detailed logging to <data>/batch-renamer/logs/; set RENAMER_LOG=debug for verbose
     crate::core::logger::init(cfg!(debug_assertions));
-    log::info!("=== Batch Renamer GUI starting (v{}) ===", env!("CARGO_PKG_VERSION"));
+    log::info!(
+        "=== Batch Renamer GUI starting (v{}) ===",
+        env!("CARGO_PKG_VERSION")
+    );
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -14,6 +17,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::scan_paths,
             commands::preview,
+            commands::update_rules,
+            commands::set_conflict_strategy,
+            commands::set_apply_to,
             commands::set_manual_name,
             commands::set_selection,
             commands::remove_entries,

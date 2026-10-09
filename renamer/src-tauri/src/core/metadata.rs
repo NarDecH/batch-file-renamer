@@ -89,7 +89,7 @@ fn read_exif(path: &Path, m: &mut FileMetadata) {
 fn read_tags(path: &Path, m: &mut FileMetadata) {
     use lofty::file::TaggedFileExt;
     use lofty::tag::Accessor;
-    let Ok(mut probe) = lofty::probe::Probe::open(path) else { return };
+    let Ok(probe) = lofty::probe::Probe::open(path) else { return };
     let Ok(tagged) = probe.read() else { return };
     let tag = tagged.primary_tag().or_else(|| tagged.first_tag());
     if let Some(tag) = tag {
