@@ -43,11 +43,25 @@ jobs:
       - name: Build installers
         working-directory: renamer
         run: npm run tauri build
+      - name: Generate release notes from commits
+        env:
+          RUNTIME_NOTES_PATH: ${{ runner.temp }}/notes.md
+        run: |
+          git fetch --tags --force 2>$null
+          $prev = git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>$null
+          if (-not $prev) { $prev = git rev-list --max-parents=0 HEAD | Select-Object -First 1 }
+          $log = git log --no-decorate --pretty=format:"- %s (%h)" "$prev..${{ github.ref_name }}"
+          $notes = @("## Changes", "")
+          if ($log) { $notes += $log } else { $notes += "- (no commits found between tags)" }
+          $notes += "", "## Installers", "- NSIS setup (per-user install)", "- MSI (all-users install)"  
+          $notes | Set-Content -Path "$env:RUNTIME_NOTES_PATH" -Encoding UTF8
+          Write-Host "--- release notes ---"; Get-Content "$env:RUNTIME_NOTES_PATH"
       - name: Publish GitHub Release
         working-directory: renamer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUNTIME_NOTES_PATH: ${{ runner.temp }}/notes.md
         run: |
           $tag = "${{ github.ref_name }}"
-          gh release create $tag --verify-tag --title $tag --generate-notes
+          gh release create $tag --verify-tag --title $tag --notes-file "$env:RUNTIME_NOTES_PATH"
           gh release upload $tag (Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe", "src-tauri/target/release/bundle/msi/*.msi" | ForEach-Object { $_.FullName })

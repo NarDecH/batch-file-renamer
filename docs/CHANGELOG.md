@@ -2,6 +2,12 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.4.0] — 2026-10-10
+
+### Added
+- **Release notes อัตโนมัติใน CI** — เมื่อ tag `v*` workflow สร้าง notes จากรายการ commits ระหว่าง tag ก่อนหน้ากับ tag ใหม่ (`git describe` + `git log`) เขียนลง release ผ่าน `--notes-file` แทน `--generate-notes` ของ GitHub
+- ทดสอบ GUI ที่ติดตั้งจริง (MSI) เปิดรันได้ ไม่ crash, preview round เริ่มทำงาน, log รายวันบันทึกถูกต้อง
+
 ## [0.3.0] — 2026-10-10
 
 ### Added
