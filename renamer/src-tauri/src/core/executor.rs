@@ -467,7 +467,12 @@ fn same_file_ignoring_case(a: &Path, b: &Path) -> bool {
 /// Directory for journal files: <config>/batch-renamer/journal
 pub fn journal_dir() -> PathBuf {
     let base = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
-    base.join("batch-renamer").join("journal")
+    let dir = base.join("batch-renamer").join("journal");
+    // Ensure it exists up-front: journal writes, undo history and temp tests
+    // all assume the directory is present (a missing base makes writes fail
+    // with os error 3 on Windows).
+    let _ = std::fs::create_dir_all(&dir);
+    dir
 }
 
 pub fn journal_file(batch_id: &str) -> PathBuf {
