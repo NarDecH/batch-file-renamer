@@ -3,6 +3,7 @@
   import RulesPanel from "./lib/RulesPanel.svelte";
   import Toolbar from "./lib/Toolbar.svelte";
   import StatusBar from "./lib/StatusBar.svelte";
+  import UndoHistory from "./lib/UndoHistory.svelte";
   import { requestPreview } from "./lib/previewBridge.js";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
@@ -22,6 +23,7 @@
   let progressText = "";
   let progress = { done: 0, total: 0 };
   let search = "";
+  let undoBatches = [];
   let previewTimer = null;
   let unlistenProgress = null;
 
@@ -32,6 +34,7 @@
     listen("rename-progress", (e) => {
       progress = { done: e.payload.done, total: e.payload.total };
     }).then((un) => (unlistenProgress = un));
+    invoke("list_undo_history").then((b) => (undoBatches = b)).catch(() => {});
     return () => unlistenProgress?.();
   });
 
@@ -105,6 +108,7 @@
       await invoke("set_conflict_strategy", { strategy: conflictStrategy });
       await invoke("set_apply_to", { applyTo });
       const report = await invoke("apply_renames");
+      undoBatches = await invoke("list_undo_history");
       alert(`สำเร็จ ${report.renamed} รายการ, ล้มเหลว ${report.failed}`);
       await refreshPreview();
     } catch (e) {
@@ -124,6 +128,10 @@
     } catch (e) {
       alert("ย้อนกลับไม่ได้: " + e);
     }
+  }
+
+  function onUndoDone() {
+    return refreshPreview();
   }
 
   async function onManualEdit(id, newName) {
@@ -158,6 +166,7 @@
     <div class="table-pane">
       <input class="search" type="search" placeholder={t("search")} bind:value={search} />
       <PreviewTable {items} {search} onManualEdit={onManualEdit} />
+      <UndoHistory bind:batches={undoBatches} on:undone={onUndoDone} />
     </div>
   </div>
   <StatusBar {summary} {progressText} onRename={doRename} onUndo={doUndo} {renaming} {progress} />

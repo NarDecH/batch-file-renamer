@@ -2,6 +2,17 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.3.0] — 2026-10-10
+
+### Added
+- **Undo UI: ประวัติการเปลี่ยนชื่อทั้งชุด** — ซ้อนการพับเพิ่มเติมในแผงตาราง แสดงรายการ batch เก่าทั้งหมด (เวลา, จำนวน, รหัสชุด) พร้อมปุ่ม `ย้อนกลับถึงจุดนี้` ต่อชุด; ย้อนไปที่ชุดกลาง ๆ จะถอนชุดที่ใหม่กว่าทั้งหมดพร้อมกัน กลับสู่สถานะดิสก์ก่อนชุดนั้น
+- คำสั่ง IPC ใหม่: `undo_batch` (undo ตาม batch id + กัน busy ซ้อนรอบ)
+- **CI อัตโนมัติ (GitHub Actions)** — `cargo test` + frontend tests ทุก push/PR ไป main; เมื่อ tag `v*` บิลด์ installers (NSIS + MSI) และ publish GitHub Release อัตโนมัติ
+- Frontend tests ใหม่ 6 รายการสำหรับ undo flow และ Rust test "undo ชุดกลางเมื่อชุดใหม่ทับ path เดิม"
+
+### Fixed
+- **CLI `undo` ไม่เคยเห็น batch ของตัวเอง** — `renamer-cli --apply` ไม่เคยบันทึก batch ลง history ทำให้ `undo` ชี้ไป batch เก่าของ GUI เสมอ; ตอนนี้บันทึกทุกครั้งที่ apply สำเร็จ (ยืนยันด้วยการติดตั้ง MSI จริงแล้ว apply + undo รอบเดียวสำเร็จ)
+
 ## [0.2.0] — 2026-10-09
 
 ### Added

@@ -25,6 +25,7 @@ pub fn run() {
             commands::remove_entries,
             commands::apply_renames,
             commands::undo_last,
+            commands::undo_batch,
             commands::list_undo_history,
             commands::list_unfinished_batches,
             commands::save_preset,

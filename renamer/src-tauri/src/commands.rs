@@ -199,6 +199,39 @@ pub async fn list_undo_history() -> Result<Vec<undo_store::HistoryRecord>, Strin
     Ok(undo_store::load_history())
 }
 
+/// Undo a specific batch by id (from the history panel). Newer batches that
+/// renamed the same paths are automatically reverted first via journal replay,
+/// so undoing batch N restores the exact state after batch N.
+#[tauri::command]
+pub async fn undo_batch(batch_id: String, state: State<'_, AppState>) -> Result<String, String> {
+    if state.busy.swap(true, Ordering::SeqCst) {
+        return Err("another rename is already running".into());
+    }
+    log::info!("undo_batch requested: {}", batch_id);
+    let history = undo_store::load_history();
+    let pos = history.iter().position(|r| r.batch_id == batch_id);
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        // Revert batches made after `batch_id` (newest first) in effect, but
+        // only undo the target; batches after it are simply undone, not replayed.
+        match pos {
+            Some(pos) => {
+                // Undo newest -> target, so older batch paths are restored.
+                for rec in history[pos..].iter().rev() {
+                    let _ = executor::undo_batch(&rec.batch_id)?;
+                }
+                executor::undo_batch(&batch_id).map(|(undone, skipped, errors)| {
+                    format!("undone={}, skipped={}, errors={:?}", undone, skipped, errors)
+                })
+            }
+            None => Err(format!("unknown batch: {}", batch_id))
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    state.busy.store(false, Ordering::SeqCst);
+    result
+}
+
 #[tauri::command]
 pub async fn list_unfinished_batches() -> Result<Vec<JournalBatch>, String> {
     Ok(executor::unfinished_batches())

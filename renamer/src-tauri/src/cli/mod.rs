@@ -151,6 +151,14 @@ pub fn run() -> i32 {
 
             if apply {
                 println!("\nrenamed={}, failed={}", report.renamed, report.failed);
+                if report.renamed > 0 {
+                    // Record the batch so `renamer-cli undo` can find it later.
+                    crate::core::undo_store::record_batch(crate::core::undo_store::HistoryRecord {
+                        batch_id: report.batch_id.clone(),
+                        created_at_ms: chrono::Utc::now().timestamp_millis(),
+                        renamed: report.renamed,
+                    });
+                }
                 if report.failed > 0 {
                     for f in &report.failures {
                         eprintln!("failed: {} -> {}: {}", f.from, f.to, f.error);

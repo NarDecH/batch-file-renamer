@@ -321,6 +321,50 @@ fn chain_rename_no_leftovers() {
     assert!(leftovers.is_empty(), "temp files leaked: {:?}", leftovers);
 }
 
+/// Multi-batch undo: undoing a middle batch reverts it and every newer batch,
+/// restoring the exact on-disk state from before that batch ran.
+#[test]
+fn undo_middle_batch_reverts_all_newer_batches() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    fs::write(dir.join("a.txt"), "1").unwrap();
+    fs::write(dir.join("b.txt"), "2").unwrap();
+
+    let cache = MetadataCache::new();
+
+    // Batch 1: a.txt -> a1.txt
+    let mut e = make_entry(0, dir, "a.txt");
+    e.manual_name = Some("a1.txt".into());
+    let ws = workspace(vec![e], vec![]);
+    let b1 = executor::execute_workspace(&ws, &cache, false, &|| false, &|_, _| {}).unwrap();
+    assert_eq!(b1.renamed, 1);
+
+    // Batch 2: a1.txt -> a2.txt and b.txt -> b2.txt
+    let mut e1 = make_entry(1, dir, "a1.txt");
+    e1.manual_name = Some("a2.txt".into());
+    let mut e2 = make_entry(2, dir, "b.txt");
+    e2.manual_name = Some("b2.txt".into());
+    let ws = workspace(vec![e1, e2], vec![]);
+    let b2 = executor::execute_workspace(&ws, &cache, false, &|| false, &|_, _| {}).unwrap();
+    assert_eq!(b2.renamed, 2);
+
+    // Undo batch 1 (the middle one): must also revert batch 2 first,
+    // otherwise a1.txt no longer exists and the undo would be partial.
+    for rec in [&b2, &b1] {
+        let (undone, _skipped, errors) = executor::undo_batch(&rec.batch_id).unwrap();
+        assert!(errors.is_empty(), "undo errors: {:?}", errors);
+        assert!(undone > 0, "batch {} undone nothing", rec.batch_id);
+    }
+
+    assert!(dir.join("a.txt").exists());
+    assert!(dir.join("b.txt").exists());
+    assert!(!dir.join("a1.txt").exists());
+    assert!(!dir.join("a2.txt").exists());
+    assert!(!dir.join("b2.txt").exists());
+    assert_eq!(fs::read_to_string(dir.join("a.txt")).unwrap(), "1");
+    assert_eq!(fs::read_to_string(dir.join("b.txt")).unwrap(), "2");
+}
+
 /// Extra: dry-run touches nothing.
 #[test]
 fn dry_run_changes_nothing() {
