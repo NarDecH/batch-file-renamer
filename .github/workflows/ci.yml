@@ -10,17 +10,50 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
+      # Full history: E2E CLI test needs tags to diff, tag build needs commits
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: renamer/src-tauri
+      - name: Version guard (tag must match app version)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $cargo = (Select-String -Path renamer/src-tauri/Cargo.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          $conf = (Select-String -Path renamer/src-tauri/tauri.conf.json -Pattern '"version":\s*"([^"]+)"').Matches[0].Groups[1].Value
+          Write-Host "tag=$tag cargo=$cargo conf=$conf"
+          if ($tag -ne $cargo -or $tag -ne $conf) {
+            Write-Error "Version mismatch: tag v$tag but Cargo.toml=$cargo tauri.conf.json=$conf"
+            exit 1
+          }
       - name: cargo test
         working-directory: renamer/src-tauri
         run: cargo test --locked --all-features
       - name: frontend tests
         working-directory: renamer
         run: npm test
+      - name: E2E CLI test (apply then undo on a temp dir)
+        shell: pwsh
+        run: |
+          cargo build --release --bin renamer-cli
+          $tmp = Join-Path $env:TEMP ([guid]::NewGuid().ToString())
+          New-Item -ItemType Directory -Path $tmp | Out-Null
+          Set-Content -Path (Join-Path $tmp "photo_1.jpg") -Value "a"
+          Set-Content -Path (Join-Path $tmp "photo_2.jpg") -Value "b"
+          $preset = Join-Path $env:TEMP "ci-preset.json"
+          Set-Content -Path $preset -Value '{"version":1,"name":"ci","rules":[{"params":{"type":"replace","find":"photo","replace_with":"IMG","case_sensitive":false,"occurrence":"all","use_regex":false},"enabled":true}]}'
+          $cli = Join-Path (Get-Location) "target\release\renamer-cli.exe"
+          & $cli --apply -p $preset preview -f $tmp | Write-Host
+          if ((Get-ChildItem $tmp -Filter "IMG_*.jpg").Count -ne 2) { Write-Error "E2E apply failed"; exit 1 }
+          & $cli undo | Write-Host
+          if ((Get-ChildItem $tmp -Filter "photo_*.jpg").Count -ne 2) { Write-Error "E2E undo failed"; exit 1 }
+          Write-Host "E2E OK: apply renamed 2, undo restored 2"
+        working-directory: renamer/src-tauri
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

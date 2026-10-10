@@ -2,6 +2,13 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.5.0] — 2026-10-10
+
+### Added
+- **CI version guard** — เมื่อ tag `v*` workflow เทียบเวอร์ชันใน `Cargo.toml` / `tauri.conf.json` กับ tag ก่อน build ไม่ตรงจะ fail ทันที กันลืม bump
+- **E2E test ใน CI** — ทุก build รัน CLI `apply` + `undo` จริงบน temp dir (rename 2 ไฟล์ แล้ว undo ต้องกลับครบ) กัน regression ฝั่ง journal/history
+- docs/README + AGENT.md อัปเดตสารสำคัญ v0.3.0–v0.4.0 (Undo history, CLI undo, CI auto release notes)
+
 ## [0.4.0] — 2026-10-10
 
 ### Added

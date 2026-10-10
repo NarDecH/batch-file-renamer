@@ -18,7 +18,7 @@ npm run tauri dev        # เปิด GUI dev พร้อมเริ่ม V
 npm test                 # frontend IPC/preview regression tests
 cd src-tauri
 cargo check              # ตรวจ compile เร็ว
-cargo test               # unit + acceptance tests (14 tests)
+cargo test               # unit + acceptance tests (17 tests)
 cargo bench              # preview benchmark (10k ไฟล์ × 5 กฎ)
 # อย่าใช้ cargo run เปิด GUI dev: ต้องเริ่ม Vite; CLI: cargo run --bin renamer-cli -- --help
 cd .. && npm run tauri build   # สร้าง installer NSIS/MSI
@@ -66,7 +66,8 @@ src/                    # Svelte — param ของกฎต้องเป็�
 
 ## Testing
 
-- Frontend IPC/preview tests อยู่ใน `src/lib/previewBridge.test.js`; รันจาก `renamer/` ด้วย `npm test`
+- Frontend IPC/preview/undo tests อยู่ใน `src/lib/previewBridge.test.js` + `src/lib/undoFlow.test.js`; รันจาก `renamer/` ด้วย `npm test`
+- **Undo/History:** บันทึก batch ลง `undo_store` ต้องมาเป็นคู่กับการ execute ทั้ง GUI (`commands.rs`) และ CLI (`cli/mod.rs` — เคยลืมจน `undo` ชี้ batch เก่าเสมอ); journal/undo ผ่าน `executor::undo_batch` ซึ่งถอน `entries` ย้อนหลังทั้ง batch สำคัญ: `journal_dir()` ต้องสร้าง directory ก่อนใช้ (Windows `os error 3` ถ้า base ยังไม่มี)
 - Test ทุกกฎใหม่ + ทุกแก้ไข executor ใน `tests/acceptance.rs`
 - Benchmark อยู่ใน `benches/preview_bench.rs` — ห้ามให้ preview 10k ช้ากว่า ~200 ms
 - `cargo test` ต้องผ่าน 100% ก่อนเสนองาน

@@ -8,7 +8,7 @@
 |---|---|
 | Tech Stack | Rust (core) · Tauri 2 · Svelte 5 |
 | แพลตฟอร์ม | Windows (หลัก) · โค้ดเขียน cross-platform |
-| ขนาดตัวติดตั้ง | ~1.4 MB (NSIS) / ~2 MB (MSI) |
+| ขนาดตัวติดตั้ง | ~3.6 MB (NSIS) / ~5.9 MB (MSI) |
 | Performance | พรีวิว 10,000 ไฟล์ × 5 กฎ ≈ **60 ms** |
 
 ![Architecture](images/architecture.svg)
@@ -19,12 +19,13 @@
 - **กฎ 14 ประเภท:** Replace, Regex, Insert, Remove, Case, Numbering, Extension, Date/Time, Metadata (EXIF + แท็กเพลง), Template, Clean up, Swap, Import List (CSV/TXT), Hash/UUID — ซ้อนกันได้ ลากสลับลำดับได้ เปิด/ปิดรายกฎได้
 - **Live Preview:** ตาราง virtualized ลื่นแม้แสนแถว, ไฮไลต์ส่วนที่เปลี่ยน, สีสถานะ (เขียว/เหลือง/แดง/เทา), แก้ชื่อใหม่ด้วยมือได้ (ดับเบิลคลิก)
 - **ปลอดภัย:** ตรวจชื่อซ้ำ/ชื่อสงวน Windows/อักขระต้องห้าม, เลือกจัดการชนชื่อได้ 3 โหมด, journal write-ahead, rollback อัตโนมัติเมื่อยกเลิก/ล้มเหลว
-- **Undo:** ย้อนหลังได้แม้ปิดโปรแกรมแล้ว (journal บนดิสก์)
+- **Undo:** ย้อนหลังได้แม้ปิดโปรแกรมแล้ว (journal บนดิสก์) + **แผงประวัติการเปลี่ยนชื่อทั้งชุด** ใน GUI — กด "ย้อนกลับถึงจุดนี้" ต่อ batch (ย้อนชุดกลางจะถอนทุกชุดที่ใหม่กว่าพร้อมกัน; CLI มี `undo` ให้ batch ตัวเองด้วย)
 - **Progress แบบ real-time** ระหว่างเปลี่ยนชื่อ + ปุ่มยกเลิก
 - **Log รายวัน** สำหรับวิเคราะห์และดีบัก
 - **Preset:** บันทึก/โหลดชุดกฎ + preset ในตัว (photos, music)
 - **i18n:** ไทย/อังกฤษ, ธีม Dark/Light, คีย์ลัด Ctrl+Enter / Ctrl+Z
-- **CLI:** ใช้ engine เดียวกับ GUI, dry-run เป็นค่าเริ่มต้น
+- **CLI:** ใช้ engine เดียวกับ GUI, dry-run เป็นค่าเริ่มต้น — apply สำเร็จจะบันทึก batch ลง history ให้ `undo` ใช้ได้ทันที
+- **CI อัตโนมัติ (GitHub Actions):** ทุก push/PR รัน cargo + frontend tests; tag `v*` → build NSIS/MSI + เขียน release notes จาก commits ระหว่าง tag ลง GitHub Release เอง
 - **พรีวิวและ IPC:** ทุกครั้งที่คำนวณพรีวิว GUI จะซิงก์กฎ, conflict strategy และ apply-to ไปยัง Rust ก่อน; เปลี่ยนตัวเลือกแล้วพรีวิวอัปเดตอัตโนมัติ
 - **Regression tests ฝั่ง UI:** ทดสอบลำดับ IPC ก่อนพรีวิวและยืนยันว่า IPC ล้มเหลวแล้วไม่เรียกพรีวิวต่อ
 
@@ -78,10 +79,10 @@ Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo 
 
 ```bash
 cd renamer
-npm test          # frontend IPC/preview tests
+npm test          # frontend IPC/preview/undo tests (8 tests)
 npm run build     # production build ของ frontend
 cd src-tauri
-cargo test        # Rust unit + acceptance tests (14 tests)
+cargo test        # Rust unit + acceptance tests (17 tests)
 cargo bench       # benchmark พรีวิว 10k ไฟล์ × 5 กฎ
 ```
 
