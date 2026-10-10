@@ -29,7 +29,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Full history: the release-notes step needs commits between tags
+      # (fetch-depth: 1 makes `git log prev..tag` come back empty).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
