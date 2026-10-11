@@ -116,32 +116,67 @@ pub fn apply_rule(params: &RuleParams, input: &str, ctx: &RuleContext) -> String
                 input.to_string()
             }
         }
-        RuleParams::Renumber { start, step, pad, reset_per_dir } => {
-            let idx = if *reset_per_dir { ctx.index_in_dir } else { ctx.index };
-            let number = start + (idx.saturating_sub(1)) * step;
-            let num_str = format!("{:0width$}", number, width = pad);
-            // Replace the FIRST digit-run with the number, then drop the
-            // remaining digit-runs (they belong to the old numbering scheme).
-            // Files without any digits get the number appended as "_<number>".
-            let mut out = String::with_capacity(input.len() + num_str.len());
-            let mut replaced = false;
-            let mut chars = input.chars().peekable();
-            while let Some(c) = chars.next() {
-                if c.is_ascii_digit() {
-                    while let Some(&nc) = chars.peek() {
-                        if nc.is_ascii_digit() { chars.next(); } else { break; }
-                    }
-                    if !replaced {
-                        out.push_str(&num_str);
-                        replaced = true;
-                    }
+        RuleParams::Renumber { offset, target, pad, floor_one } => {
+            // Shift embedded number(s) relative to their old value.
+            let pad_w = (*pad).max(1);
+            let shift = |run: &str| -> String {
+                let old: i64 = run.parse().unwrap_or(0);
+                let mut new = old + offset;
+                if *floor_one && new < 1 {
+                    new = 1;
+                }
+                if new < 0 {
+                    new = 0;
+                }
+                // Zero-pad to `pad` digits, but never truncate a wider number.
+                let s = new.abs().to_string();
+                let sign = if new < 0 { "-" } else { "" };
+                if s.len() >= pad_w {
+                    format!("{}{}", sign, s)
                 } else {
-                    out.push(c);
+                    format!("{}{}{}", sign, "0".repeat(pad_w - s.len()), s)
+                }
+            };
+            let runs: Vec<usize> = input
+                .char_indices()
+                .filter(|(_, c)| c.is_ascii_digit())
+                .map(|(i, _)| i)
+                .collect::<Vec<_>>();
+            if runs.is_empty() {
+                return input.to_string();
+            }
+            // Fold indices into (start, end) spans of digit-runs
+            let mut spans: Vec<(usize, usize)> = Vec::new();
+            let mut iter = runs.into_iter();
+            let first = iter.next().unwrap();
+            let mut cur = (first, first + 1);
+            for i in iter {
+                if i == cur.1 {
+                    cur.1 = i + 1;
+                } else {
+                    spans.push(cur);
+                    cur = (i, i + 1);
                 }
             }
-            if !replaced {
-                out = format!("{}_{}", out, num_str);
+            spans.push(cur);
+            let last_idx = spans.len() - 1;
+            let mut out = String::with_capacity(input.len() + 4);
+            let mut prev = 0usize;
+            for (n, &(s, e)) in spans.iter().enumerate() {
+                out.push_str(&input[prev..s]);
+                let take = match target.as_str() {
+                    "all" => true,
+                    "last" => n == last_idx,
+                    _ => n == 0,
+                };
+                if take {
+                    out.push_str(&shift(&input[s..e]));
+                } else {
+                    out.push_str(&input[s..e]);
+                }
+                prev = e;
             }
+            out.push_str(&input[prev..]);
             out
         }
         RuleParams::Hash { algo, length, keep_extension } => {

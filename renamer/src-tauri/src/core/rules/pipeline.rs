@@ -171,18 +171,25 @@ pub enum RuleParams {
         #[serde(default = "default_true")]
         keep_extension: bool,
     },
-    /// Replace every existing digit-run in the name with the item's new
-    /// sequence number (1-based in the working set). Original text around
-    /// each number is kept, so "IMG_1234.jpg" -> "IMG_001.jpg".
+    /// Shift the (first) number embedded in the name by a relative offset,
+    /// e.g. "photo_0050.jpg" + offset 25 -> "photo_0075.jpg". The new number
+    /// is computed from the OLD number of that very file, not from the item
+    /// position. Negative results become 0 (or 1 with floor_one).
     Renumber {
-        #[serde(default = "default_one")]
-        start: usize,
-        #[serde(default = "default_one")]
-        step: usize,
+        /// Relative amount to add to the existing number (may be negative)
+        #[serde(default)]
+        offset: i64,
+        /// Select which embedded number to act on:
+        /// first | last | all (each digit-run shifted independently)
+        #[serde(default = "default_renumber_target")]
+        target: String,
+        /// Minimum width of the result; zero-pads when shorter.
+        /// Existing digits longer than this are left as-is.
         #[serde(default = "default_pad")]
         pad: usize,
+        /// Clamp negative results to 1 instead of 0
         #[serde(default)]
-        reset_per_dir: bool,
+        floor_one: bool,
     },
 }
 
@@ -192,6 +199,7 @@ fn default_remove_mode() -> String { "chars".into() }
 fn default_one() -> usize { 1 }
 fn default_pad() -> usize { 3 }
 fn default_numbering_mode() -> String { "suffix".into() }
+fn default_renumber_target() -> String { "first".into() }
 fn default_true() -> bool { true }
 
 /// A rule in the pipeline with its metadata.

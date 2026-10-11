@@ -1,15 +1,15 @@
 {
   "version": 1,
   "name": "renumber",
-  "description": "Replace old photo/camera numbers with a clean 001.. sequence",
+  "description": "Shift numbers embedded in file names relative to their old value (e.g. +25 or -30)",
   "rules": [
     {
       "params": {
         "type": "renumber",
-        "start": 1,
-        "step": 1,
-        "pad": 3,
-        "reset_per_dir": false
+        "offset": 1,
+        "target": "first",
+        "pad": 4,
+        "floor_one": false
       },
       "enabled": true,
       "apply_to": null,

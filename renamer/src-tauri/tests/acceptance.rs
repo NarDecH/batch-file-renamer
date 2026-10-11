@@ -442,27 +442,27 @@ fn mixed_parallel_and_chain_batch() {
     assert!(!dir.join("A").exists() && !dir.join("solo.txt").exists());
 }
 
-/// Renumber: replaces the existing number run with the new sequence number.
+/// Renumber: shifts the existing number relative to its old value, per file.
 /// Extra: split_name_ext basic behavior.
 #[test]
 fn renumber_replaces_existing_number() {
     let tmp = TempDir::new().unwrap();
     let dir = tmp.path();
-    for n in ["IMG_1234.jpg", "IMG_1235.jpg", "img001.png"] {
+    for n in ["IMG_1234.jpg", "IMG_0080.jpg", "video_2023_050.mp4"] {
         fs::write(dir.join(n), "x").unwrap();
     }
     let entries = vec![
         make_entry(0, dir, "IMG_1234.jpg"),
-        make_entry(1, dir, "IMG_1235.jpg"),
-        make_entry(2, dir, "img001.png"),
+        make_entry(1, dir, "IMG_0080.jpg"),
+        make_entry(2, dir, "video_2023_050.mp4"),
     ];
     let ws = workspace(
         entries,
         vec![rule(RuleParams::Renumber {
-            start: 1,
-            step: 1,
-            pad: 3,
-            reset_per_dir: true,
+            offset: -30,
+            target: "last".into(),
+            pad: 4,
+            floor_one: false,
         })],
     );
     let cache = MetadataCache::new();
@@ -470,54 +470,67 @@ fn renumber_replaces_existing_number() {
     assert_eq!(preview.len(), 3);
     let map: std::collections::HashMap<&str, &str> =
         preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
-    assert_eq!(map["IMG_1234.jpg"], "IMG_001.jpg");
-    assert_eq!(map["IMG_1235.jpg"], "IMG_002.jpg");
-    // "img001.png" -> first digit-run replaced with "003" (sorted after IMG_*),
-    // second run (1) dropped per the old-scheme rule.
-    assert_eq!(map["img001.png"], "img003.png");
+    // Each file shifted by its OWN old number (relative offset)
+    assert_eq!(map["IMG_1234.jpg"], "IMG_1204.jpg");
+    assert_eq!(map["IMG_0080.jpg"], "IMG_0050.jpg");
+    // target=last: "2023" untouched, "050" -> "0020" (pad 4, consistent)
+    assert_eq!(map["video_2023_050.mp4"], "video_2023_0020.mp4");
 }
 
-/// Renumber: file without digits gets the number appended.
+/// Renumber: subtract below the pad floor, clamp modes and "all" target.
 #[test]
 fn renumber_appends_when_no_digits() {
     let tmp = TempDir::new().unwrap();
     let dir = tmp.path();
-    fs::write(dir.join("no_numbers.txt"), "x").unwrap();
-    fs::write(dir.join("photo.jpg"), "x").unwrap();
+    fs::write(dir.join("n_0007.txt"), "x").unwrap();
+    fs::write(dir.join("clip_001_002.wav"), "x").unwrap();
     let entries = vec![
-        make_entry(0, dir, "no_numbers.txt"),
-        make_entry(1, dir, "photo.jpg"),
+        make_entry(0, dir, "n_0007.txt"),
+        make_entry(1, dir, "clip_001_002.wav"),
     ];
-    let ws = workspace(
-        entries,
-        vec![rule(RuleParams::Renumber { start: 10, step: 5, pad: 2, reset_per_dir: true })],
-    );
+    // floor_one: subtracting 10 from 7 clamps to 1
+    let mk = |floor: bool, offset: i64, target: &str| {
+        workspace(
+            vec![make_entry(0, dir, "n_0007.txt"), make_entry(1, dir, "clip_001_002.wav")],
+            vec![rule(RuleParams::Renumber { offset, target: target.into(), pad: 4, floor_one: floor })],
+        )
+    };
+    // floor_one: subtracting 10 from 7 clamps to 1
     let cache = MetadataCache::new();
-    let preview = preview_names(&ws, &cache);
+    let preview = preview_names(&mk(true, -10, "first"), &cache);
     let map: std::collections::HashMap<&str, &str> =
         preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
-    assert_eq!(map["no_numbers.txt"], "no_numbers_10.txt");
-    assert_eq!(map["photo.jpg"], "photo_15.jpg");
+    assert_eq!(map["n_0007.txt"], "n_0001.txt");
+    // without floor_one the same offset clamps to 0
+    let ws2 = mk(false, -10, "first");
+    let preview2 = preview_names(&ws2, &cache);
+    let map2: std::collections::HashMap<&str, &str> =
+        preview2.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
+    assert_eq!(map2["n_0007.txt"], "n_0000.txt");
+    // target=all: both embedded numbers shift independently
+    let ws3 = mk(false, 5, "all");
+    let preview3 = preview_names(&ws3, &cache);
+    let map3: std::collections::HashMap<&str, &str> =
+        preview3.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
+    assert_eq!(map3["clip_001_002.wav"], "clip_0006_0007.wav");
 }
 
-/// Renumber must not leave duplicate names when old numbers collide.
+/// Renumber executes for real without conflicts (relative add +10).
 #[test]
 fn renumber_no_conflicts_and_execute() {
     let tmp = TempDir::new().unwrap();
     let dir = tmp.path();
-    for n in ["a1.txt", "b2.txt", "c3.txt"] {
+    for n in ["a001.txt", "b002.txt", "c003.txt"] {
         fs::write(dir.join(n), "x").unwrap();
-        let ent = make_entry(0, dir, n);
-        let _ = ent;
     }
     let entries = vec![
-        make_entry(0, dir, "a1.txt"),
-        make_entry(1, dir, "b2.txt"),
-        make_entry(2, dir, "c3.txt"),
+        make_entry(0, dir, "a001.txt"),
+        make_entry(1, dir, "b002.txt"),
+        make_entry(2, dir, "c003.txt"),
     ];
     let ws = workspace(
         entries,
-        vec![rule(RuleParams::Renumber { start: 1, step: 1, pad: 2, reset_per_dir: true })],
+        vec![rule(RuleParams::Renumber { offset: 10, target: "first".into(), pad: 3, floor_one: false })],
     );
     let cache = MetadataCache::new();
     let preview = preview_names(&ws, &cache);
@@ -525,15 +538,15 @@ fn renumber_no_conflicts_and_execute() {
     assert!(statuses.iter().all(|s| matches!(s, ItemStatus::Ready)), "all ready, got {:?}", statuses);
     let map: std::collections::HashMap<&str, &str> =
         preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
-    assert_eq!(map["a1.txt"], "a01.txt");
-    assert_eq!(map["b2.txt"], "b02.txt");
-    assert_eq!(map["c3.txt"], "c03.txt");
+    assert_eq!(map["a001.txt"], "a011.txt");
+    assert_eq!(map["b002.txt"], "b012.txt");
+    assert_eq!(map["c003.txt"], "c013.txt");
     let report = executor::execute_workspace(&ws, &cache, false, &|| false, &|_, _| {}).unwrap();
     assert_eq!(report.renamed, 3);
-    for n in ["a1.txt", "b2.txt", "c3.txt"] {
+    for n in ["a001.txt", "b002.txt", "c003.txt"] {
         assert!(!dir.join(n).exists(), "old name {} must be gone", n);
     }
-    for n in ["a01.txt", "b02.txt", "c03.txt"] {
+    for n in ["a011.txt", "b012.txt", "c013.txt"] {
         assert!(dir.join(n).exists(), "new name {} missing", n);
     }
 }

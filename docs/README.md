@@ -61,7 +61,7 @@ Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo 
 3. **ทำชื่อ URL-friendly** — Clean up (strip accents, space→`-`) + Case lower: `Café Ñandú Ep 1.mp4` → `cafe-nandu-ep-1.mp4`
 4. **สลับชื่อไฟล์สองไฟล์** — แก้ชื่อใหม่ด้วยมือ, engine จัดการ cycle ด้วย temp name อัตโนมัติ
 5. **ใส่เลขรันแบบ natural sort** — preset `numbering` / กฎ Numbering: `ep1, ep2, ep10` → `ep001, ep002, ep010`
-6. **เขียนเลขเดิมให้เป็นชุดใหม่** — กฎ Renumber: `IMG_1234.jpg, IMG_1287.jpg, video_2023_x.mp4` → `IMG_001.jpg, IMG_002.jpg, video_2023_003.mp4` (แทน digit-run แรกด้วยเลขลำดับใหม่ ไม่แทรกซ้ำ, ไม่แตะนามสกุล)
+6. **บวก/ลบเลขในชื่อไฟล์แบบสัมพันธ์** — กฎ Renumber: กำหนด offset เอง เช่น −30 → `IMG_1234.jpg` กลายเป็น `IMG_1204.jpg` และ `IMG_0080.jpg` เป็น `IMG_0050.jpg` (แต่ละไฟล์คิดจากเลขเดิมของตัวเอง; เลือกได้ว่าจะเลื่อนเลขชุดแรก/ชุดสุดท้าย/ทุกชุด; ไม่แตะไฟล์ที่ไม่มีเลข)
 
 ## เกณฑ์ยอมรับ (automated tests)
 
