@@ -2,6 +2,14 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.9.0] — 2026-10-12
+
+### Added
+- **สแกนหลายโฟลเดอร์ในชุดเดียว (GUI)** — เลือกโฟลเดอร์หลายที่พร้อมกัน (multi-select) หรือกด "เพิ่มโฟลเดอร์" เพื่อ append เข้าชุดปัจจุบัน; backend `scan_paths` รองรับ path หลายที่คั่นด้วย `;` และโหมด append ที่คุม id ไม่ให้ชนกัน
+- **ตัวกรองไฟล์ตามขนาดและวันที่ (GUI)** — ช่อง min/max MB + วันที่แก้ไขจาก/ถึง ใน Toolbar (backend รองรับมานานแล้ว แต่ยังไม่มีหน้า UI)
+- **Landing page (GitHub Pages) อัปเดต** — ปุ่มดาวน์โหลด release ล่าสุด, เนื้อหากฎเลขใหม่ Renumber สองโหมด, ลิงก์ changelog ปัจจุบัน
+- GUI ติดตั้งจริง v0.8.0: ติดตั้งผ่าน NSIS `/S` แล้วเปิดรันเสถียร, CLI-on-install ยืนยันกฎ Renumber relative ได้ผลถูกต้อง, ปิดสะอาด
+
 ## [0.8.0] — 2026-10-11
 
 ### Added

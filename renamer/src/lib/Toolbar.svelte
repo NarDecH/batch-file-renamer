@@ -2,11 +2,12 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { t, setLang, setTheme, ui } from "../i18n.svelte.js";
 
-  let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), onSettingsChanged, onScan, scanning } = $props();
+  let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), minSizeMb = $bindable(null), maxSizeMb = $bindable(null), modifiedAfter = $bindable(""), modifiedBefore = $bindable(""), onSettingsChanged, onScan, scanning } = $props();
 
   async function browse() {
-    const picked = await open({ directory: true, multiple: false, title: t("scanPath") });
-    if (typeof picked === "string") scanPath = picked;
+    const picked = await open({ directory: true, multiple: true, title: t("scanPath") });
+    if (Array.isArray(picked)) scanPath = picked.join(";");
+    else if (typeof picked === "string") scanPath = picked;
   }
 </script>
 
@@ -16,7 +17,12 @@
   <button onclick={browse}>…</button>
   <label class="chk"><input type="checkbox" bind:checked={recursive} /> {t("recursive")}</label>
   <input class="filter" placeholder={t("filter")} bind:value={filterGlobs} />
-  <button class="primary" onclick={onScan} disabled={scanning}>{t("scan")}</button>
+  <input class="num" type="number" min="0" step="0.1" placeholder="min MB" title="minSize" bind:value={minSizeMb} />
+  <input class="num" type="number" min="0" step="0.1" placeholder="max MB" title="maxSize" bind:value={maxSizeMb} />
+  <input class="date" type="date" title="modified from" bind:value={modifiedAfter} />
+  <input class="date" type="date" title="modified to" bind:value={modifiedBefore} />
+  <button class="primary" onclick={() => onScan(false)} disabled={scanning}>{t("scan")}</button>
+  <button onclick={() => onScan(true)} disabled={scanning || !scanPath} title="Add folders to the current set">+ {t("addFolders")}</button>
 
   <select bind:value={applyTo} onchange={() => onSettingsChanged?.()} title={t("applyTo")}>
     <option value="name">name</option>
@@ -61,7 +67,9 @@
     padding: 5px 8px;
   }
   .path { flex: 1; min-width: 200px; font-family: Consolas, monospace; }
-  .filter { width: 170px; }
+  .filter { width: 140px; }
+  .num { width: 80px; }
+  .date { width: 135px; }
   button {
     background: var(--bg);
     color: var(--text);

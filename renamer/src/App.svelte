@@ -18,6 +18,10 @@
   let scanPath = "";
   let recursive = true;
   let filterGlobs = "";
+  let minSizeMb = null;
+  let maxSizeMb = null;
+  let modifiedAfter = "";
+  let modifiedBefore = "";
   let scanning = false;
   let renaming = false;
   let progressText = "";
@@ -38,10 +42,12 @@
     return () => unlistenProgress?.();
   });
 
-  export async function doScan() {
+  export async function doScan(append = false) {
     scanning = true;
     progressText = t("scanning");
     try {
+      const mb = (v) => (v == null || v === "" || isNaN(v) ? null : Math.round(Number(v) * 1024 * 1024));
+      const dateMs = (d) => (d ? new Date(d + "T00:00:00").getTime() : null);
       const opts = {
         path: scanPath,
         recursive,
@@ -53,14 +59,14 @@
           .filter(Boolean),
         excludeGlobs: [],
         includeRegex: null,
-        minSize: null,
-        maxSize: null,
-        modifiedAfterMs: null,
-        modifiedBeforeMs: null,
+        minSize: mb(minSizeMb),
+        maxSize: mb(maxSizeMb),
+        modifiedAfterMs: dateMs(modifiedAfter),
+        modifiedBeforeMs: modifiedBefore ? new Date(modifiedBefore + "T23:59:59").getTime() : null,
         includeHidden: false,
         skipSymlinks: true,
       };
-      await invoke("scan_paths", { opts });
+      await invoke("scan_paths", { opts, append });
       await refreshPreview();
     } catch (e) {
       console.error(e);
@@ -154,6 +160,10 @@
     bind:filterGlobs
     bind:applyTo
     bind:conflictStrategy
+    bind:minSizeMb
+    bind:maxSizeMb
+    bind:modifiedAfter
+    bind:modifiedBefore
     onSettingsChanged={schedulePreview}
     onScan={doScan}
     scanning={scanning}

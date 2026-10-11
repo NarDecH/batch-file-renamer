@@ -4,6 +4,7 @@ export const translations = {
   th: {
     scanPath: "โฟลเดอร์:",
     scan: "สแกน",
+    addFolders: "เพิ่มโฟลเดอร์",
     recursive: "รวมโฟลเดอร์ย่อย",
     filter: "กรอง (*.jpg, *.png)",
     rules: "กฎการเปลี่ยนชื่อ",
@@ -44,6 +45,7 @@ export const translations = {
   en: {
     scanPath: "Folder:",
     scan: "Scan",
+    addFolders: "Add folders",
     recursive: "Include subfolders",
     filter: "Filter (*.jpg, *.png)",
     rules: "Rename rules",

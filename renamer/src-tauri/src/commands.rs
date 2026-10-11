@@ -40,18 +40,48 @@ pub struct ScanResult {
 }
 
 #[tauri::command]
-pub async fn scan_paths(opts: ScanOptions, state: State<'_, AppState>) -> Result<ScanResult, String> {
+pub async fn scan_paths(opts: ScanOptions, append: Option<bool>, state: State<'_, AppState>) -> Result<ScanResult, String> {
     let started = std::time::Instant::now();
-    let opts2 = opts.clone();
-    let entries = tauri::async_runtime::spawn_blocking(move || scanner::scan(&opts2))
+    // Support multiple paths separated by ';' — they share one scan session
+    // (backwards compatible: single path behaves as before).
+    let paths: Vec<String> = opts.path.split(';').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+    if paths.is_empty() {
+        return Err("no scan path given".into());
+    }
+    let append = append.unwrap_or(false);
+    let mut all_entries: Vec<FileEntry> = Vec::new();
+    for p in &paths {
+        let mut o = opts.clone();
+        o.path = p.clone();
+        let entries = tauri::async_runtime::spawn_blocking({
+            let o = o.clone();
+            move || scanner::scan(&o)
+        })
         .await
         .map_err(|e| e.to_string())??;
+        all_entries.extend(entries);
+    }
+    // Re-unique ids when appending (ids must stay unique in the workspace)
+    if append {
+        let ws = state.workspace.read();
+        let mut next_id = ws.entries.iter().map(|e| e.id).max().map(|m| m + 1).unwrap_or(0);
+        drop(ws);
+        for e in all_entries.iter_mut() {
+            e.id = next_id;
+            next_id += 1;
+        }
+    }
 
     let mut ws = state.workspace.write();
-    ws.entries = entries.clone();
+    if append {
+        ws.entries.extend(all_entries.clone());
+    } else {
+        ws.entries = all_entries.clone();
+    }
     drop(ws);
 
-    Ok(ScanResult { elapsed_ms: started.elapsed().as_millis() as u64, entries })
+    log::info!("scan_paths: {} path(s), {} entries (append={})", paths.len(), all_entries.len(), append);
+    Ok(ScanResult { elapsed_ms: started.elapsed().as_millis() as u64, entries: all_entries })
 }
 
 #[derive(Serialize)]

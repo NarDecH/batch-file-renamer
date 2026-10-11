@@ -17,6 +17,10 @@
     <span class="badge ok">Preview 10k ไฟล์ ≈ 60 ms</span>
     <span class="badge warn">Windows (หลัก)</span>
   </p>
+  <p style="margin-top:14px">
+    <a class="dl" href="https://github.com/NarDecH/batch-file-renamer/releases/latest" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--accent,#4ade80);color:#052e16;font-weight:700;text-decoration:none">⬇️ ดาวน์โหลดเวอร์ชันล่าสุด (Windows)</a>
+    <a href="https://github.com/NarDecH/batch-file-renamer/releases" style="margin-left:10px;color:inherit">ดู release ทั้งหมด</a>
+  </p>
 </header>
 
 <nav class="toc">
@@ -38,7 +42,9 @@
     <div class="card"><h3>🛡️ ปลอดภัยก่อนอะไรทั้งปวง</h3><p>ตรวจปลายทางบนดิสก์ทุกไฟล์ทุกครั้ง, journal write-ahead, ยกเลิกแล้ว rollback คืนทั้งชุด, Undo ได้แม้ปิดโปรแกรมไปแล้ว</p></div>
     <div class="card"><h3>⚡ เร็ว 54 เท่าจากการวัดจริง</h3><p>Pipeline 10,000 ไฟล์ × 5 กฎ ใช้เพียง ~60 ms (จากเดิม 3.27 s) — ตาราง 100k แถวเลื่อนลื่นด้วย virtual list</p></div>
     <div class="card"><h3>🔤 เข้าใจภาษาไทยจริง</h3><p>ตัด/แทรกข้อความแบบ grapheme — สระ วรรณยุกต์ อีโมจิ ไม่หลุดลอย พร้อมรองรับชื่อสงวนของ Windows ครบ</p></div>
-    <div class="card"><h3>🧩 กฎ 14 ประเภท + Preset</h3><p>Replace, Regex, EXIF วันที่ถ่าย, แท็กเพลง, Numbering, Import CSV… บันทึกชุดกฎใช้ซ้ำได้ทั้ง GUI และ CLI</p></div>
+    <div class="card"><h3>🧩 กฎ 13 ประเภท + Preset</h3><p>Replace, Regex, EXIF วันที่ถ่าย, แท็กเพลง, <strong>Renumber</strong> (บวก/ลบเลขในชื่อแบบสัมพันธ์ หรือใส่เลขลำดับใหม่ — กฎเดียวจบ), Import CSV… บันทึกชุดกฎใช้ซ้ำได้ทั้ง GUI และ CLI</p></div>
+    <div class="card"><h3>🔢 Renumber — เลขแบบสัมพันธ์</h3><p>บวก/ลบเลขที่ฝังในชื่อไฟล์ทีละไฟล์ <code>IMG_0100 +1 → IMG_0101</code>, <code>IMG_0999 +1 → IMG_1000</code> · เลือกเลื่อนเลขชุดแรก/สุดท้าย/ทุกชุด · เตือนเมื่อชื่อใหม่จะทับชื่อไฟล์อื่นในชุด (shift-chain)</p></div>
+    <div class="card"><h3>🗂️ สแกนหลายโฟลเดอร์ + ตัวกรอง</h3><p>เลือกโฟลเดอร์เดิม ๆ หลายที่เข้าชุดเดียวกันได้ + กรองไฟล์ตามขนาด (min/max MB) และวันที่แก้ไข (จาก/ถึง) — ทั้ง CLI และ GUI ใช้ engine เดียวกัน</p></div>
     <div class="card"><h3>👁️ เห็นก่อนแตะ</h3><p>พรีวิวสดทุกครั้งที่แก้กฎ ไฮไลต์ส่วนที่เปลี่ยน แก้ชื่อทับด้วยมือได้ ยืนยันอีกครั้งก่อน rename จริง</p></div>
     <div class="card"><h3>🖥️ GUI + CLI ในเดียว</h3><p>engine ชุดเดียวกัน — ใช้เมาส์ใน GUI หรือเขียนสคริปต์ผ่าน CLI ก็ได้ผลเหมือนกันเป๊ะ</p></div>
   </div>
@@ -68,7 +74,7 @@ cargo run --bin renamer-cli -- undo</code></pre>
     <tr><th>เอกสาร</th><th>เนื้อหา</th></tr>
     <tr><td><a href="README.html">README</a></td><td>ฟีเจอร์ครบ, วิธีติดตั้ง, CLI, วิธีรันทดสอบ frontend/Rust, ตัวอย่าง 5 กรณี, ตารางเกณฑ์ยอมรับ</td></tr>
     <tr><td><a href="RESEARCH.html">Research</a></td><td>เหตุผลการเลือก stack, บทเรียน benchmark 54×, การออกแบบความปลอดภัย, grapheme ภาษาไทย</td></tr>
-    <tr><td><a href="CHANGELOG.html">Changelog</a></td><td>ประวัติเวอร์ชัน 0.1.0 → 0.2.0 รวมการแก้ GUI preview IPC และ regression tests</td></tr>
+    <tr><td><a href="CHANGELOG.html">Changelog</a></td><td>ประวัติเวอร์ชัน 0.1.0 → ล่าสุด — evolution ของกฎเลข (Numbering → Renumber relative offset พร้อมเตือน shift-chain), CI อัตโนมัติ, undo history</td></tr>
     <tr><td><a href="../AGENT.md">AGENT.md</a></td><td>คู่มือสำหรับ AI agent ที่จะมาแก้โค้ดต่อ</td></tr>
   </table>
 
