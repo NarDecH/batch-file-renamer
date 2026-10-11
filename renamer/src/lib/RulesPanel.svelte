@@ -12,6 +12,7 @@
     { id: "remove", label: "Remove" },
     { id: "case", label: "Case" },
     { id: "numbering", label: "Numbering" },
+    { id: "renumber", label: "Renumber" },
     { id: "extension", label: "Extension" },
     { id: "date_time", label: "Date/Time" },
     { id: "metadata", label: "Metadata" },
@@ -37,6 +38,8 @@
         return { type, style: "upper" };
       case "numbering":
         return { type, start: 1, step: 1, pad: 3, mode: "suffix", separator: "_", reset_per_dir: true };
+      case "renumber":
+        return { type, start: 1, step: 1, pad: 3, reset_per_dir: true };
       case "extension":
         return { type, action: "lowercase", extension: "" };
       case "date_time":
@@ -209,6 +212,10 @@
           <label>start <input type="number" bind:value={rule.params.start} oninput={changed} /></label>
           <label>pad <input type="number" bind:value={rule.params.pad} oninput={changed} /></label>
           <label>sep <input bind:value={rule.params.separator} oninput={changed} /></label>
+        {:else if rule.params.type === "renumber"}
+          <label>start <input type="number" bind:value={rule.params.start} oninput={changed} /></label>
+          <label>pad <input type="number" bind:value={rule.params.pad} oninput={changed} /></label>
+          <label><input type="checkbox" bind:checked={rule.params.reset_per_dir} onchange={changed} /> per-dir</label>
         {:else if rule.params.type === "extension"}
           <select bind:value={rule.params.action} onchange={changed}>
             <option value="lowercase">lowercase</option><option value="set">set</option><option value="remove">remove</option>

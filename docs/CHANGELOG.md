@@ -2,6 +2,15 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.6.0] — 2026-10-11
+
+### Added
+- **กฎ Renumber** — เปลี่ยนเลขเดิมในชื่อไฟล์ให้เป็นเลขลำดับใหม่ตามตำแหน่งในชุด เช่น `IMG_1234.jpg` → `IMG_001.jpg`, `video_2023_001.mp4` → `video_2023_015.mp4` — คนละงานกับ Numbering (ที่แทรกเลขต่อท้าย): Renumber **แทน** digit-run แรกของ base name ด้วยเลขใหม่ แล้วตัด digit-run ที่เหลือออก
+- พารามิเตอร์: `start`, `step`, `pad`, `reset_per_dir` — ไฟล์ที่ไม่มีตัวเลขในชื่อจะได้เลขต่อท้ายเป็น `_001` อัตโนมัติ (ไม่มีชื่อซ้ำ)
+- Preset ตัวอย่าง `renumber.json` — เปลี่ยนเลขเดิมทุกไฟล์เป็นลำดับใหม่ทั้งชุด (ไม่ reset ต่อโฟลเดอร์)
+- เขียน base-only ในโหมด Full: Renumber ไม่แตะนามสกุล (`.jpg` ถูกเก็บไว้เสมอ)
+- Tests: 3 automation tests ครอบ replace-number / no-digit fallback / conflict-free execute บนดิสก์จริง
+
 ## [0.5.0] — 2026-10-10
 
 ### Added

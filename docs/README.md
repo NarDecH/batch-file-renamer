@@ -22,7 +22,7 @@
 - **Undo:** ย้อนหลังได้แม้ปิดโปรแกรมแล้ว (journal บนดิสก์) + **แผงประวัติการเปลี่ยนชื่อทั้งชุด** ใน GUI — กด "ย้อนกลับถึงจุดนี้" ต่อ batch (ย้อนชุดกลางจะถอนทุกชุดที่ใหม่กว่าพร้อมกัน; CLI มี `undo` ให้ batch ตัวเองด้วย)
 - **Progress แบบ real-time** ระหว่างเปลี่ยนชื่อ + ปุ่มยกเลิก
 - **Log รายวัน** สำหรับวิเคราะห์และดีบัก
-- **Preset:** บันทึก/โหลดชุดกฎ + preset ในตัว (photos, music)
+- **Preset:** บันทึก/โหลดชุดกฎ + preset ในตัว (photos, music, renumber)
 - **i18n:** ไทย/อังกฤษ, ธีม Dark/Light, คีย์ลัด Ctrl+Enter / Ctrl+Z
 - **CLI:** ใช้ engine เดียวกับ GUI, dry-run เป็นค่าเริ่มต้น — apply สำเร็จจะบันทึก batch ลง history ให้ `undo` ใช้ได้ทันที
 - **CI อัตโนมัติ (GitHub Actions):** ทุก push/PR รัน cargo + frontend tests; tag `v*` → build NSIS/MSI + เขียน release notes จาก commits ระหว่าง tag ลง GitHub Release เอง
@@ -60,7 +60,8 @@ Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo 
 2. **จัดชื่อเพลง** — preset `music`: Template `{artist} - {title}` + Clean up
 3. **ทำชื่อ URL-friendly** — Clean up (strip accents, space→`-`) + Case lower: `Café Ñandú Ep 1.mp4` → `cafe-nandu-ep-1.mp4`
 4. **สลับชื่อไฟล์สองไฟล์** — แก้ชื่อใหม่ด้วยมือ, engine จัดการ cycle ด้วย temp name อัตโนมัติ
-5. **ใส่เลขรันแบบ natural sort** — `ep1, ep2, ep10` → `ep001, ep002, ep010`
+5. **ใส่เลขรันแบบ natural sort** — preset `numbering` / กฎ Numbering: `ep1, ep2, ep10` → `ep001, ep002, ep010`
+6. **เขียนเลขเดิมให้เป็นชุดใหม่** — กฎ Renumber: `IMG_1234.jpg, IMG_1287.jpg, video_2023_x.mp4` → `IMG_001.jpg, IMG_002.jpg, video_2023_003.mp4` (แทน digit-run แรกด้วยเลขลำดับใหม่ ไม่แทรกซ้ำ, ไม่แตะนามสกุล)
 
 ## เกณฑ์ยอมรับ (automated tests)
 

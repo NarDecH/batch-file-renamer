@@ -442,6 +442,102 @@ fn mixed_parallel_and_chain_batch() {
     assert!(!dir.join("A").exists() && !dir.join("solo.txt").exists());
 }
 
+/// Renumber: replaces the existing number run with the new sequence number.
+/// Extra: split_name_ext basic behavior.
+#[test]
+fn renumber_replaces_existing_number() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    for n in ["IMG_1234.jpg", "IMG_1235.jpg", "img001.png"] {
+        fs::write(dir.join(n), "x").unwrap();
+    }
+    let entries = vec![
+        make_entry(0, dir, "IMG_1234.jpg"),
+        make_entry(1, dir, "IMG_1235.jpg"),
+        make_entry(2, dir, "img001.png"),
+    ];
+    let ws = workspace(
+        entries,
+        vec![rule(RuleParams::Renumber {
+            start: 1,
+            step: 1,
+            pad: 3,
+            reset_per_dir: true,
+        })],
+    );
+    let cache = MetadataCache::new();
+    let preview = preview_names(&ws, &cache);
+    assert_eq!(preview.len(), 3);
+    let map: std::collections::HashMap<&str, &str> =
+        preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
+    assert_eq!(map["IMG_1234.jpg"], "IMG_001.jpg");
+    assert_eq!(map["IMG_1235.jpg"], "IMG_002.jpg");
+    // "img001.png" -> first digit-run replaced with "003" (sorted after IMG_*),
+    // second run (1) dropped per the old-scheme rule.
+    assert_eq!(map["img001.png"], "img003.png");
+}
+
+/// Renumber: file without digits gets the number appended.
+#[test]
+fn renumber_appends_when_no_digits() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    fs::write(dir.join("no_numbers.txt"), "x").unwrap();
+    fs::write(dir.join("photo.jpg"), "x").unwrap();
+    let entries = vec![
+        make_entry(0, dir, "no_numbers.txt"),
+        make_entry(1, dir, "photo.jpg"),
+    ];
+    let ws = workspace(
+        entries,
+        vec![rule(RuleParams::Renumber { start: 10, step: 5, pad: 2, reset_per_dir: true })],
+    );
+    let cache = MetadataCache::new();
+    let preview = preview_names(&ws, &cache);
+    let map: std::collections::HashMap<&str, &str> =
+        preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
+    assert_eq!(map["no_numbers.txt"], "no_numbers_10.txt");
+    assert_eq!(map["photo.jpg"], "photo_15.jpg");
+}
+
+/// Renumber must not leave duplicate names when old numbers collide.
+#[test]
+fn renumber_no_conflicts_and_execute() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    for n in ["a1.txt", "b2.txt", "c3.txt"] {
+        fs::write(dir.join(n), "x").unwrap();
+        let ent = make_entry(0, dir, n);
+        let _ = ent;
+    }
+    let entries = vec![
+        make_entry(0, dir, "a1.txt"),
+        make_entry(1, dir, "b2.txt"),
+        make_entry(2, dir, "c3.txt"),
+    ];
+    let ws = workspace(
+        entries,
+        vec![rule(RuleParams::Renumber { start: 1, step: 1, pad: 2, reset_per_dir: true })],
+    );
+    let cache = MetadataCache::new();
+    let preview = preview_names(&ws, &cache);
+    let statuses: Vec<ItemStatus> = preview.iter().map(|(_, _, s)| s.clone()).collect();
+    assert!(statuses.iter().all(|s| matches!(s, ItemStatus::Ready)), "all ready, got {:?}", statuses);
+    let map: std::collections::HashMap<&str, &str> =
+        preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
+    assert_eq!(map["a1.txt"], "a01.txt");
+    assert_eq!(map["b2.txt"], "b02.txt");
+    assert_eq!(map["c3.txt"], "c03.txt");
+    let report = executor::execute_workspace(&ws, &cache, false, &|| false, &|_, _| {}).unwrap();
+    assert_eq!(report.renamed, 3);
+    for n in ["a1.txt", "b2.txt", "c3.txt"] {
+        assert!(!dir.join(n).exists(), "old name {} must be gone", n);
+    }
+    for n in ["a01.txt", "b02.txt", "c03.txt"] {
+        assert!(dir.join(n).exists(), "new name {} missing", n);
+    }
+}
+
 /// Extra: split_name_ext basic behavior.
 #[test]
 fn split_name_ext_basics() {

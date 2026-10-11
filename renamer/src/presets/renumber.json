@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "renumber",
+  "description": "Replace old photo/camera numbers with a clean 001.. sequence",
+  "rules": [
+    {
+      "params": {
+        "type": "renumber",
+        "start": 1,
+        "step": 1,
+        "pad": 3,
+        "reset_per_dir": false
+      },
+      "enabled": true,
+      "apply_to": null,
+      "only_if_glob": null
+    }
+  ]
+}

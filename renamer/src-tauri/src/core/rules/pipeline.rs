@@ -171,6 +171,19 @@ pub enum RuleParams {
         #[serde(default = "default_true")]
         keep_extension: bool,
     },
+    /// Replace every existing digit-run in the name with the item's new
+    /// sequence number (1-based in the working set). Original text around
+    /// each number is kept, so "IMG_1234.jpg" -> "IMG_001.jpg".
+    Renumber {
+        #[serde(default = "default_one")]
+        start: usize,
+        #[serde(default = "default_one")]
+        step: usize,
+        #[serde(default = "default_pad")]
+        pad: usize,
+        #[serde(default)]
+        reset_per_dir: bool,
+    },
 }
 
 fn default_occurrence() -> String { "all".into() }
@@ -267,7 +280,7 @@ pub fn apply_pipeline(
 fn apply_full_aware(params: &RuleParams, work: &str, ctx: &RuleContext) -> String {
     let is_ext_rule = matches!(params, RuleParams::Extension { .. });
     let base_only = match params {
-        RuleParams::Numbering { .. } => true,
+        RuleParams::Numbering { .. } | RuleParams::Renumber { .. } => true,
         RuleParams::DateTime { mode, .. } | RuleParams::Metadata { mode, .. } if mode == "suffix" => true,
         _ => false,
     };

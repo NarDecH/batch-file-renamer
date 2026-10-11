@@ -116,6 +116,34 @@ pub fn apply_rule(params: &RuleParams, input: &str, ctx: &RuleContext) -> String
                 input.to_string()
             }
         }
+        RuleParams::Renumber { start, step, pad, reset_per_dir } => {
+            let idx = if *reset_per_dir { ctx.index_in_dir } else { ctx.index };
+            let number = start + (idx.saturating_sub(1)) * step;
+            let num_str = format!("{:0width$}", number, width = pad);
+            // Replace the FIRST digit-run with the number, then drop the
+            // remaining digit-runs (they belong to the old numbering scheme).
+            // Files without any digits get the number appended as "_<number>".
+            let mut out = String::with_capacity(input.len() + num_str.len());
+            let mut replaced = false;
+            let mut chars = input.chars().peekable();
+            while let Some(c) = chars.next() {
+                if c.is_ascii_digit() {
+                    while let Some(&nc) = chars.peek() {
+                        if nc.is_ascii_digit() { chars.next(); } else { break; }
+                    }
+                    if !replaced {
+                        out.push_str(&num_str);
+                        replaced = true;
+                    }
+                } else {
+                    out.push(c);
+                }
+            }
+            if !replaced {
+                out = format!("{}_{}", out, num_str);
+            }
+            out
+        }
         RuleParams::Hash { algo, length, keep_extension } => {
             let ext = if *keep_extension {
                 // Recover original extension from the original name
