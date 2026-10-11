@@ -63,13 +63,17 @@ fn criterion_1_full_pipeline() {
                 position: 0,
                 from_right: false,
             }),
-            rule(RuleParams::Numbering {
+            rule(RuleParams::Renumber {
+                mode: "absolute".into(),
+                offset: 0,
+                target: "first".into(),
+                floor_one: false,
                 start: 1,
                 step: 1,
-                pad: 3,
-                mode: "suffix".into(),
+                numbering_mode: "suffix".into(),
                 separator: "_".into(),
                 reset_per_dir: true,
+                pad: 3,
             }),
             rule(RuleParams::Extension {
                 action: "lowercase".into(),
@@ -175,13 +179,17 @@ fn criterion_5_natural_sort_numbering() {
     }
     let ws = workspace(
         sorted,
-        vec![rule(RuleParams::Numbering {
+        vec![rule(RuleParams::Renumber {
+            mode: "absolute".into(),
+            offset: 0,
+            target: "first".into(),
+            floor_one: false,
             start: 1,
             step: 1,
-            pad: 3,
-            mode: "replace".into(),
+            numbering_mode: "replace".into(),
             separator: String::new(),
             reset_per_dir: true,
+            pad: 3,
         })],
     );
     let cache = MetadataCache::new();
@@ -459,10 +467,16 @@ fn renumber_replaces_existing_number() {
     let ws = workspace(
         entries,
         vec![rule(RuleParams::Renumber {
+            mode: "relative".into(),
             offset: -30,
             target: "last".into(),
-            pad: 4,
             floor_one: false,
+            start: 1,
+            step: 1,
+            numbering_mode: "suffix".into(),
+            separator: String::new(),
+            reset_per_dir: false,
+            pad: 4,
         })],
     );
     let cache = MetadataCache::new();
@@ -492,7 +506,18 @@ fn renumber_appends_when_no_digits() {
     let mk = |floor: bool, offset: i64, target: &str| {
         workspace(
             vec![make_entry(0, dir, "n_0007.txt"), make_entry(1, dir, "clip_001_002.wav")],
-            vec![rule(RuleParams::Renumber { offset, target: target.into(), pad: 4, floor_one: floor })],
+            vec![rule(RuleParams::Renumber {
+                mode: "relative".into(),
+                offset,
+                target: target.into(),
+                floor_one: floor,
+                start: 1,
+                step: 1,
+                numbering_mode: "suffix".into(),
+                separator: String::new(),
+                reset_per_dir: false,
+                pad: 4,
+            })],
         )
     };
     // floor_one: subtracting 10 from 7 clamps to 1
@@ -530,7 +555,18 @@ fn renumber_no_conflicts_and_execute() {
     ];
     let ws = workspace(
         entries,
-        vec![rule(RuleParams::Renumber { offset: 10, target: "first".into(), pad: 3, floor_one: false })],
+        vec![rule(RuleParams::Renumber {
+            mode: "relative".into(),
+            offset: 10,
+            target: "first".into(),
+            floor_one: false,
+            start: 1,
+            step: 1,
+            numbering_mode: "suffix".into(),
+            separator: String::new(),
+            reset_per_dir: false,
+            pad: 3,
+        })],
     );
     let cache = MetadataCache::new();
     let preview = preview_names(&ws, &cache);
@@ -549,6 +585,83 @@ fn renumber_no_conflicts_and_execute() {
     for n in ["a011.txt", "b012.txt", "c013.txt"] {
         assert!(dir.join(n).exists(), "new name {} missing", n);
     }
+}
+
+/// Absolute mode (merged Numbering): stamps the working-set position with
+/// prefix mode, replicating the old dedicated Numbering rule.
+#[test]
+fn renumber_absolute_stamps_position() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    fs::write(dir.join("a.txt"), "x").unwrap();
+    fs::write(dir.join("b.txt"), "x").unwrap();
+    fs::write(dir.join("c.txt"), "x").unwrap();
+    let entries = vec![
+        make_entry(0, dir, "a.txt"),
+        make_entry(1, dir, "b.txt"),
+        make_entry(2, dir, "c.txt"),
+    ];
+    let ws = workspace(
+        entries,
+        vec![rule(RuleParams::Renumber {
+            mode: "absolute".into(),
+            offset: 0,
+            target: "first".into(),
+            floor_one: false,
+            start: 1,
+            step: 1,
+            numbering_mode: "prefix".into(),
+            separator: "_".into(),
+            reset_per_dir: true,
+            pad: 2,
+        })],
+    );
+    let cache = MetadataCache::new();
+    let preview = preview_names(&ws, &cache);
+    let map: std::collections::HashMap<&str, &str> =
+        preview.iter().map(|(o, n, _)| (o.as_str(), n.as_str())).collect();
+    // prefix mode prepends separator+number (same semantics as the old dedicated rule)
+    assert_eq!(map["a.txt"], "_01a.txt");
+    assert_eq!(map["b.txt"], "_02b.txt");
+    assert_eq!(map["c.txt"], "_03c.txt");
+}
+
+/// Shift-chain warning: renaming a_002 -> a_021 while a_021 -> a_041 must be
+/// flagged (the new name will be occupied before it frees up).
+#[test]
+fn renumber_shift_chain_warning() {
+    let tmp = TempDir::new().unwrap();
+    let dir = tmp.path();
+    for n in ["a_002.txt", "a_021.txt"] {
+        fs::write(dir.join(n), "x").unwrap();
+    }
+    let entries = vec![
+        make_entry(0, dir, "a_002.txt"),
+        make_entry(1, dir, "a_021.txt"),
+    ];
+    let ws = workspace(
+        entries,
+        vec![rule(RuleParams::Renumber {
+            mode: "relative".into(),
+            offset: 16,
+            target: "first".into(),
+            floor_one: false,
+            start: 1,
+            step: 1,
+            numbering_mode: "suffix".into(),
+            separator: String::new(),
+            reset_per_dir: false,
+            pad: 3,
+        })],
+    );
+    let cache = MetadataCache::new();
+    let preview = preview_names(&ws, &cache);
+    let map: std::collections::HashMap<&str, (String, String)> =
+        preview.iter().map(|(o, n, s)| (o.as_str(), (n.as_str().to_string(), format!("{:?}", s)))).collect();
+    let (new2, _): &(String, String) = &map["a_002.txt"];
+    let (new21, _s21): &(String, String) = &map["a_021.txt"];
+    assert_eq!(new2, "a_018.txt");
+    assert_eq!(new21, "a_037.txt");
 }
 
 /// Extra: split_name_ext basic behavior.

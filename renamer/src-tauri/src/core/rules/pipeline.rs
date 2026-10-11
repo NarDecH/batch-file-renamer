@@ -83,22 +83,6 @@ pub enum RuleParams {
         /// upper | lower | title | sentence | camel | snake | kebab
         style: String,
     },
-    Numbering {
-        #[serde(default = "default_one")]
-        start: usize,
-        #[serde(default = "default_one")]
-        step: usize,
-        #[serde(default = "default_pad")]
-        pad: usize,
-        /// prefix | suffix | replace
-        #[serde(default = "default_numbering_mode")]
-        mode: String,
-        /// Text joined with the number, e.g. "_" for "_001"
-        #[serde(default)]
-        separator: String,
-        #[serde(default)]
-        reset_per_dir: bool,
-    },
     Extension {
         /// set | remove | lowercase
         action: String,
@@ -173,23 +157,43 @@ pub enum RuleParams {
     },
     /// Shift the (first) number embedded in the name by a relative offset,
     /// e.g. "photo_0050.jpg" + offset 25 -> "photo_0075.jpg". The new number
-    /// is computed from the OLD number of that very file, not from the item
-    /// position. Negative results become 0 (or 1 with floor_one).
+    /// One rule covering both number styles:
+    /// - mode "absolute": stamp the working-set position (start/step/...).
+    /// - mode "relative": shift the number embedded in the name by an offset
+    ///   (the OLD number of that very file). Negative results become 0
+    ///   (or 1 with floor_one).
     Renumber {
+        /// absolute | relative
+        #[serde(default = "default_renumber_mode")]
+        mode: String,
+        // --- relative ---
         /// Relative amount to add to the existing number (may be negative)
         #[serde(default)]
         offset: i64,
-        /// Select which embedded number to act on:
-        /// first | last | all (each digit-run shifted independently)
+        /// Select which embedded number to act on: first | last | all
         #[serde(default = "default_renumber_target")]
         target: String,
+        /// Clamp negative results to 1 instead of 0
+        #[serde(default)]
+        floor_one: bool,
+        // --- absolute (former Numbering) ---
+        #[serde(default = "default_one")]
+        start: usize,
+        #[serde(default = "default_one")]
+        step: usize,
+        /// prefix | suffix | replace
+        #[serde(default = "default_numbering_mode")]
+        numbering_mode: String,
+        /// Text joined with the number (absolute)
+        #[serde(default)]
+        separator: String,
+        #[serde(default)]
+        reset_per_dir: bool,
+        // --- shared ---
         /// Minimum width of the result; zero-pads when shorter.
         /// Existing digits longer than this are left as-is.
         #[serde(default = "default_pad")]
         pad: usize,
-        /// Clamp negative results to 1 instead of 0
-        #[serde(default)]
-        floor_one: bool,
     },
 }
 
@@ -200,6 +204,7 @@ fn default_one() -> usize { 1 }
 fn default_pad() -> usize { 3 }
 fn default_numbering_mode() -> String { "suffix".into() }
 fn default_renumber_target() -> String { "first".into() }
+fn default_renumber_mode() -> String { "relative".into() }
 fn default_true() -> bool { true }
 
 /// A rule in the pipeline with its metadata.
@@ -288,7 +293,7 @@ pub fn apply_pipeline(
 fn apply_full_aware(params: &RuleParams, work: &str, ctx: &RuleContext) -> String {
     let is_ext_rule = matches!(params, RuleParams::Extension { .. });
     let base_only = match params {
-        RuleParams::Numbering { .. } | RuleParams::Renumber { .. } => true,
+        RuleParams::Renumber { .. } => true,
         RuleParams::DateTime { mode, .. } | RuleParams::Metadata { mode, .. } if mode == "suffix" => true,
         _ => false,
     };

@@ -170,6 +170,44 @@ fn validate_and_resolve(ws: &Workspace, items: &mut [PlanItem], case_insensitive
             }
         }
     }
+
+    // 4. Shift-chain warning (relative renumber): a new name may equal the OLD
+    //    name of a different item that itself will be renamed. Not a hard
+    //    conflict (the other file moves away in the same batch), but the user
+    //    should know the batch depends on ordered execution.
+    let old_names: HashMap<(String, String), usize> = items
+        .iter()
+        .enumerate()
+        .filter(|(_, i)| !matches!(i.status, ItemStatus::Unchanged | ItemStatus::Error) && i.new_name != i.old_name)
+        .map(|(idx, i)| {
+            let old = if case_insensitive { i.old_name.to_lowercase() } else { i.old_name.clone() };
+            ((i.parent.clone(), old), idx)
+        })
+        .collect();
+    for idx in 0..items.len() {
+        let (parent, new_name) = {
+            let it = &items[idx];
+            if !matches!(it.status, ItemStatus::Ready) || it.new_name == it.old_name {
+                continue;
+            }
+            (it.parent.clone(), it.new_name.clone())
+        };
+        let key_name = if case_insensitive { new_name.to_lowercase() } else { new_name.clone() };
+        if let Some(&other_idx) = old_names.get(&(parent.clone(), key_name)) {
+            // Must reference a DIFFERENT item (that case is covered by
+            // conflict resolution above).
+            if other_idx != idx {
+                let other_new = items[other_idx].new_name.clone();
+                if other_new != new_name {
+                    items[idx].status = ItemStatus::Warning;
+                    items[idx].message = Some(format!(
+                        "name frees up later in this batch ({} is being renamed)",
+                        items[other_idx].old_name
+                    ));
+                }
+            }
+        }
+    }
 }
 
 fn resolve_conflict(

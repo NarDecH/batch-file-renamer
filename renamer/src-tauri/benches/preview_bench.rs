@@ -26,13 +26,17 @@ fn five_rules() -> Vec<RuleSpec> {
             position: 0,
             from_right: false,
         }),
-        RuleSpec::new(RuleParams::Numbering {
+        RuleSpec::new(RuleParams::Renumber {
+            mode: "absolute".into(),
+            offset: 0,
+            target: "first".into(),
+            floor_one: false,
             start: 1,
             step: 1,
-            pad: 3,
-            mode: "suffix".into(),
+            numbering_mode: "suffix".into(),
             separator: "_".into(),
             reset_per_dir: true,
+            pad: 3,
         }),
         RuleSpec::new(RuleParams::Cleanup {
             trim: true,

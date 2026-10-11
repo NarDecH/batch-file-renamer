@@ -37,9 +37,9 @@
       case "case":
         return { type, style: "upper" };
       case "numbering":
-        return { type, start: 1, step: 1, pad: 3, mode: "suffix", separator: "_", reset_per_dir: true };
+        return { type, mode: "absolute", offset: 0, target: "first", floor_one: false, start: 1, step: 1, pad: 3, numbering_mode: "suffix", separator: "_", reset_per_dir: true };
       case "renumber":
-        return { type, offset: 1, target: "first", pad: 4, floor_one: false };
+        return { type, mode: "relative", offset: 1, target: "first", floor_one: false, start: 1, step: 1, pad: 4, numbering_mode: "suffix", separator: "_", reset_per_dir: false };
       case "extension":
         return { type, action: "lowercase", extension: "" };
       case "date_time":
@@ -208,17 +208,26 @@
             <option value="camel">camelCase</option><option value="snake">snake_case</option>
             <option value="kebab">kebab-case</option>
           </select>
-        {:else if rule.params.type === "numbering"}
-          <label>start <input type="number" bind:value={rule.params.start} oninput={changed} /></label>
-          <label>pad <input type="number" bind:value={rule.params.pad} oninput={changed} /></label>
-          <label>sep <input bind:value={rule.params.separator} oninput={changed} /></label>
-        {:else if rule.params.type === "renumber"}
-          <label>offset <input type="number" bind:value={rule.params.offset} oninput={changed} /></label>
-          <select bind:value={rule.params.target} onchange={changed}>
-            <option value="first">first</option><option value="last">last</option><option value="all">all</option>
+        {:else if rule.params.type === "numbering" || rule.params.type === "renumber"}
+          <select bind:value={rule.params.mode} onchange={changed}>
+            <option value="relative">relative (± existing)</option>
+            <option value="absolute">absolute (sequence)</option>
           </select>
+          {#if rule.params.mode === "relative"}
+            <label>offset <input type="number" bind:value={rule.params.offset} oninput={changed} /></label>
+            <select bind:value={rule.params.target} onchange={changed}>
+              <option value="first">first</option><option value="last">last</option><option value="all">all</option>
+            </select>
+            <label><input type="checkbox" bind:checked={rule.params.floor_one} onchange={changed} /> floor&nbsp;1</label>
+          {:else}
+            <label>start <input type="number" bind:value={rule.params.start} oninput={changed} /></label>
+            <select bind:value={rule.params.numbering_mode} onchange={changed}>
+              <option value="suffix">suffix</option><option value="prefix">prefix</option><option value="replace">replace</option>
+            </select>
+            <label>sep <input bind:value={rule.params.separator} oninput={changed} /></label>
+            <label><input type="checkbox" bind:checked={rule.params.reset_per_dir} onchange={changed} /> per-dir</label>
+          {/if}
           <label>pad <input type="number" bind:value={rule.params.pad} oninput={changed} /></label>
-          <label><input type="checkbox" bind:checked={rule.params.floor_one} onchange={changed} /> floor&nbsp;1</label>
         {:else if rule.params.type === "extension"}
           <select bind:value={rule.params.action} onchange={changed}>
             <option value="lowercase">lowercase</option><option value="set">set</option><option value="remove">remove</option>

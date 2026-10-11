@@ -2,6 +2,16 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.8.0] — 2026-10-11
+
+### Added
+- **เตือน shift-chain ใน preview** — เมื่อกฎ Renumber (relative) ทำให้ชื่อใหม่ของไฟล์ A ตรงกับชื่อเดิมของไฟล์ B ที่กำลังจะถูกเปลี่ยนชื่อในชุดเดียวกัน (เช่น `a_002`+16 = `a_018` ขณะที่ `a_021` กำลังย้ายออก) แถวนั้นจะขึ้นสถานะ Warning พร้อมข้อความบอกว่าชื่อดังกล่าวจะว่างในภายหลังของ batch เดียวกัน — executor จัดการลำดับ safe อยู่แล้ว แต่ผู้ใช้เห็นความเสี่ยงชัดเจน
+
+### Changed
+- **รวมกฎเลขเป็นกฎเดียว: Renumber มี 2 โหมด** — `relative` (บวก/ลบเลขเดิมของไฟล์เองด้วย offset, ต่างจาก v0.7.0) และ `absolute` (แทนที่ด้วยเลขลำดับตำแหน่งในชุด — ย้ายมาจากกฎ Numbering เดิม รวม prefix/suffix/replace, separator, reset_per_dir) — ลดจำนวนกฎใน UI และหนึ่งพารามิเตอร์ชุดเดียว
+- preset `photos.json` + built-in preset ของ CLI migrate เป็นรูปแบบใหม่แล้ว
+- Tests ใหม่: shift-chain warning + absolute mode — รวม 19 tests
+
 ## [0.7.0] — 2026-10-11
 
 ### Changed

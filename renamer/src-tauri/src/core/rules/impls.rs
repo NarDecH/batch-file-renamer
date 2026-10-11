@@ -22,17 +22,6 @@ pub fn apply_rule(params: &RuleParams, input: &str, ctx: &RuleContext) -> String
             apply_remove(input, mode, *count, *from_right, *start, *end)
         }
         RuleParams::Case { style } => apply_case(input, style),
-        RuleParams::Numbering { start, step, pad, mode, separator, reset_per_dir } => {
-            let idx = if *reset_per_dir { ctx.index_in_dir } else { ctx.index };
-            let number = start + (idx.saturating_sub(1)) * step;
-            let num_str = format!("{:0width$}", number, width = pad);
-            let piece = format!("{}{}", separator, num_str);
-            match mode.as_str() {
-                "prefix" => format!("{}{}", piece, input),
-                "replace" => num_str,
-                _ => format!("{}{}", input, piece),
-            }
-        }
         RuleParams::Extension { action, extension } => match action.as_str() {
             "set" => extension.clone(),
             "remove" => String::new(),
@@ -116,9 +105,21 @@ pub fn apply_rule(params: &RuleParams, input: &str, ctx: &RuleContext) -> String
                 input.to_string()
             }
         }
-        RuleParams::Renumber { offset, target, pad, floor_one } => {
-            // Shift embedded number(s) relative to their old value.
+        RuleParams::Renumber { mode, offset, target, floor_one, start, step, numbering_mode, separator, reset_per_dir, pad } => {
             let pad_w = (*pad).max(1);
+            // Absolute mode = former Numbering: stamp a position number.
+            if mode == "absolute" {
+                let idx = if *reset_per_dir { ctx.index_in_dir } else { ctx.index };
+                let number = start + (idx.saturating_sub(1)) * step;
+                let num_str = format!("{:0width$}", number, width = pad_w);
+                let piece = format!("{}{}", separator, num_str);
+                return match numbering_mode.as_str() {
+                    "prefix" => format!("{}{}", piece, input),
+                    "replace" => num_str,
+                    _ => format!("{}{}", input, piece),
+                };
+            }
+            // Relative mode: shift embedded number(s) by their own old value.
             let shift = |run: &str| -> String {
                 let old: i64 = run.parse().unwrap_or(0);
                 let mut new = old + offset;

@@ -16,11 +16,15 @@
     },
     {
       "params": {
-        "type": "numbering",
+        "type": "renumber",
+        "mode": "absolute",
+        "offset": 0,
+        "target": "first",
+        "floor_one": false,
         "start": 1,
         "step": 1,
         "pad": 3,
-        "mode": "suffix",
+        "numbering_mode": "suffix",
         "separator": "_",
         "reset_per_dir": true
       },
