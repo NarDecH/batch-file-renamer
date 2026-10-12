@@ -82,7 +82,9 @@ jobs:
         working-directory: renamer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # GitHub secrets cannot store an empty value; Tauri accepts any
+          # password when the key has none, so use the sentinel set below.
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: empty
         run: npm run tauri build
       - name: Generate release notes from commits
         env:
