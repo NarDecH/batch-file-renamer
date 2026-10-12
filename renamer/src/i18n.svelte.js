@@ -41,6 +41,11 @@ export const translations = {
     undoBatchBtn: "ย้อนกลับถึงจุดนี้",
     manual: "แก้มือ",
     search: "ค้นหาในตาราง",
+    updateAvailable: "มีเวอร์ชันใหม่",
+    updateDownloading: "กำลังดาวน์โหลดและติดตั้งอัปเดต...",
+    updateInstall: "ติดตั้งและรีสตาร์ท",
+    updateDismiss: "ภายหลัง",
+    updateError: "อัปเดตไม่สำเร็จ",
   },
   en: {
     scanPath: "Folder:",
@@ -83,6 +88,11 @@ export const translations = {
     undoBatchBtn: "Undo to here",
     manual: "manual",
     search: "Search in table",
+    updateAvailable: "Update available",
+    updateDownloading: "Downloading and installing update...",
+    updateInstall: "Install & restart",
+    updateDismiss: "Later",
+    updateError: "Update failed",
   },
 };
 

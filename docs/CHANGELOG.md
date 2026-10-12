@@ -2,6 +2,17 @@
 
 รูปแบบอ้างอิง [Keep a Changelog](https://keepachangelog.com/) และใช้ [SemVer](https://semver.org/)
 
+## [0.10.0] — 2026-10-12
+
+### Added
+- **Auto-update ในตัว (Tauri updater)** — เปิดโปรแกรมจะตรวจ release ใหม่จาก GitHub Releases อัตโนมัติ (ช่วง dev ไม่ตรวจ); เมื่อพบเวอร์ชันใหม่จะขึ้นแถบด้านล่าง พร้อมปุ่ม "ติดตั้งและรีสตาร์ท" — ดาวน์โหลด NSIS installer ที่เซ็นลายเซ็น minisign (TAURI_SIGNING_PRIVATE_KEY ใน GitHub secrets) แล้วตรวจ pubkey ฝั่งแอปก่อนติดตั้งเสมอ
+- CI สร้าง updater artifacts อัตโนมัติ — `latest.json` (manifest) + `.exe.sig` ถูกสร้างและแนบไปกับ GitHub Release ทุกครั้งที่ tag
+- CLI รับหลาย path — `-f` ใช้ซ้ำได้หรือคั่นด้วย `;` เหมือน backend GUI (ปิดข้อจำกัด v0.9.0)
+
+### หมายเหตุ
+- แชนเนลอัปเดตใช้ NSIS installer (per-user) — ถ้าติดตั้งด้วย MSI ต้องติดตั้งเวอร์ชันใหม่ด้วยมือครั้งหนึ่ง จากนั้น auto-update จะดูแลต่อเอง
+- ติดตั้งครั้งแรกยังเจอ SmartScreen เพราะไม่มี Authenticode cert (Tauri signature ต่างจาก code signing)
+
 ## [0.9.0] — 2026-10-12
 
 ### Added

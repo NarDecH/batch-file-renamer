@@ -32,11 +32,11 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Scan a path and preview the planned renames
+    /// Scan one or more paths and preview the planned renames
     Preview {
-        /// File or folder to process
-        #[arg(long, short = 'f')]
-        path: String,
+        /// File(s) or folder(s) to process; repeat -f or use ';' to separate
+        #[arg(long, short = 'f', value_delimiter = ';')]
+        path: Vec<String>,
         #[arg(long, short = 'r')]
         recursive: bool,
         /// Glob include filters, e.g. --include "*.jpg" --include "*.png"
@@ -85,18 +85,33 @@ pub fn run() -> i32 {
             }
         }
         Command::Preview { path, recursive, include } => {
+            let paths: Vec<String> = path.into_iter().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+            if paths.is_empty() {
+                eprintln!("no scan path given");
+                return 2;
+            }
             let mut opts = ScanOptions::default();
-            opts.path = path;
             opts.recursive = recursive;
             opts.include_globs = include;
 
-            let entries = match crate::core::scanner::scan(&opts) {
-                Ok(e) => e,
-                Err(e) => {
-                    eprintln!("scan failed: {}", e);
-                    return 2;
+            let mut entries: Vec<FileEntry> = Vec::new();
+            let mut id: u64 = 0;
+            for p in &paths {
+                opts.path = p.clone();
+                let scanned = match crate::core::scanner::scan(&opts) {
+                    Ok(e) => e,
+                    Err(e) => {
+                        eprintln!("scan failed: {}", e);
+                        return 2;
+                    }
+                };
+                // Keep ids unique across paths (same as GUI append mode)
+                for mut e in scanned {
+                    e.id = id;
+                    id += 1;
+                    entries.push(e);
                 }
-            };
+            }
 
             let rules: Vec<RuleSpec> = match &cli.preset {
                 Some(name_or_path) => load_preset_arg(name_or_path),

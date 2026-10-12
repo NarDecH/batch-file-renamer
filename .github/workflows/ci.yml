@@ -78,8 +78,11 @@ jobs:
       - name: Install frontend deps
         working-directory: renamer
         run: npm ci
-      - name: Build installers
+      - name: Build installers (signed updater artifacts)
         working-directory: renamer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build
       - name: Generate release notes from commits
         env:
@@ -94,6 +97,35 @@ jobs:
           $notes += "", "## Installers", "- NSIS setup (per-user install)", "- MSI (all-users install)"  
           $notes | Set-Content -Path "$env:RUNTIME_NOTES_PATH" -Encoding UTF8
           Write-Host "--- release notes ---"; Get-Content "$env:RUNTIME_NOTES_PATH"
+      - name: Generate latest.json (updater manifest)
+        shell: pwsh
+        env:
+          RUNTIME_NOTES_PATH: ${{ runner.temp }}/notes.md
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $repo = "NarDecH/batch-file-renamer"
+          $nsisExe = Get-ChildItem "renamer/src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
+          # NSIS is the updater channel (per-user install matches how the app is first installed).
+          $sig = Get-ChildItem "renamer/src-tauri/target/release/bundle/nsis/*.exe.sig" | Select-Object -First 1
+          if (-not $nsisExe -or -not $sig) { Write-Error "updater artifacts (.exe/.sig) not found"; exit 1 }
+          $signature = (Get-Content $sig.FullName -Raw).Trim()
+          $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ssZ")
+          $notes = Get-Content "$env:RUNTIME_NOTES_PATH" -Raw -ErrorAction SilentlyContinue
+          if (-not $notes) { $notes = "Release v$tag" }
+          $manifest = @{
+            version = $tag
+            notes = $notes
+            pub_date = $pubDate
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = $signature
+                url = "https://github.com/$repo/releases/download/${{ github.ref_name }}/" + $nsisExe.Name
+              }
+            }
+          }
+          $out = "renamer/src-tauri/target/release/bundle/latest.json"
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path $out -Encoding UTF8
+          Write-Host "--- latest.json ---"; Get-Content $out
       - name: Publish GitHub Release
         working-directory: renamer
         env:
@@ -102,4 +134,7 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           gh release create $tag --verify-tag --title $tag --notes-file "$env:RUNTIME_NOTES_PATH"
-          gh release upload $tag (Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe", "src-tauri/target/release/bundle/msi/*.msi" | ForEach-Object { $_.FullName })
+          $assets = @()
+          $assets += (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe", "src-tauri/target/release/bundle/nsis/*-setup.exe.sig", "src-tauri/target/release/bundle/msi/*.msi" | ForEach-Object { $_.FullName })
+          $assets += (Join-Path (Get-Location) "src-tauri/target/release/bundle/latest.json")
+          gh release upload $tag $assets

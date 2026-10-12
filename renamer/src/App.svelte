@@ -4,6 +4,7 @@
   import Toolbar from "./lib/Toolbar.svelte";
   import StatusBar from "./lib/StatusBar.svelte";
   import UndoHistory from "./lib/UndoHistory.svelte";
+  import Updater from "./lib/Updater.svelte";
   import { requestPreview } from "./lib/previewBridge.js";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
@@ -180,6 +181,7 @@
     </div>
   </div>
   <StatusBar {summary} {progressText} onRename={doRename} onUndo={doUndo} {renaming} {progress} />
+  <Updater />
 </div>
 
 <style>

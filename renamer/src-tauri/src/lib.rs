@@ -13,6 +13,15 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            // Auto-update via signed installers on GitHub Releases (desktop only)
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_process::init())?;
+            log::info!("updater plugin registered (endpoints from tauri.conf.json)");
+            Ok(())
+        })
         .manage(commands::AppState::new())
         .invoke_handler(tauri::generate_handler![
             commands::scan_paths,
