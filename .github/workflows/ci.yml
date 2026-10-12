@@ -85,7 +85,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: empty
         run: |
           # Write the key to a file to avoid CRLF corruption through env on Windows
-          $env:TAURI_SIGNING_PRIVATE_KEY.Replace([char]13, '') | Set-Content -NoNewline -Encoding ASCII -Path "$env:RUNNER_TEMP\\tauri.key"
+          $key = "$env:TAURI_SIGNING_PRIVATE_KEY".Replace("`r", "")
+          [System.IO.File]::WriteAllText("$env:RUNNER_TEMP\\tauri.key", $key)
           $env:TAURI_SIGNING_PRIVATE_KEY = "$env:RUNNER_TEMP\\tauri.key"
           npm run tauri build
         shell: pwsh
