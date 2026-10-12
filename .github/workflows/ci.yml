@@ -82,12 +82,14 @@ jobs:
         working-directory: renamer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: empty
         run: |
-          # Write the key to a file to avoid CRLF corruption through env on Windows
+          # Write the key to a file to avoid CRLF corruption through env on Windows.
+          # The key has no password: passwords set via TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+          # are validated against "Wrong password" even for passwordless keys.
           $key = "$env:TAURI_SIGNING_PRIVATE_KEY".Replace("`r", "")
           [System.IO.File]::WriteAllText("$env:RUNNER_TEMP\\tauri.key", $key)
           $env:TAURI_SIGNING_PRIVATE_KEY = "$env:RUNNER_TEMP\\tauri.key"
+          Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
           npm run tauri build
         shell: pwsh
       - name: Generate release notes from commits
