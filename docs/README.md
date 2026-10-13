@@ -24,7 +24,8 @@
 - **Log รายวัน** สำหรับวิเคราะห์และดีบัก
 - **Preset:** บันทึก/โหลดชุดกฎ + preset ในตัว (photos, music, renumber)
 - **i18n:** ไทย/อังกฤษ, ธีม Dark/Light, คีย์ลัด Ctrl+Enter / Ctrl+Z
-- **CLI:** ใช้ engine เดียวกับ GUI, dry-run เป็นค่าเริ่มต้น — apply สำเร็จจะบันทึก batch ลง history ให้ `undo` ใช้ได้ทันที
+- **CLI:** ใช้ engine เดียวกับ GUI, dry-run เป็นค่าเริ่มต้น — apply สำเร็จจะบันทึก batch ลง history ให้ `undo` ใช้ได้ทันที; รับ path หลายที่ต่อคำสั่ง (`-f` ใช้ซ้ำ หรือคั่นด้วย `;`)
+- **Auto-update ในตัว:** เปิดโปรแกรมจะตรวจ release ใหม่จาก GitHub Releases เอง (โหมด dev ไม่ตรวจ); เมื่อพบเวอร์ชันใหม่จะขึ้นแถบ "ติดตั้งและรีสตาร์ท" — installer ถูกเซ็นลายเซ็น minisign และแอปตรวจกับ public key ก่อนติดตั้งเสมอ
 - **CI อัตโนมัติ (GitHub Actions):** ทุก push/PR รัน cargo + frontend tests; tag `v*` → build NSIS/MSI + เขียน release notes จาก commits ระหว่าง tag ลง GitHub Release เอง
 - **พรีวิวและ IPC:** ทุกครั้งที่คำนวณพรีวิว GUI จะซิงก์กฎ, conflict strategy และ apply-to ไปยัง Rust ก่อน; เปลี่ยนตัวเลือกแล้วพรีวิวอัปเดตอัตโนมัติ
 - **Regression tests ฝั่ง UI:** ทดสอบลำดับ IPC ก่อนพรีวิวและยืนยันว่า IPC ล้มเหลวแล้วไม่เรียกพรีวิวต่อ
@@ -32,6 +33,10 @@
 ![Safety](images/safety-pipeline.svg)
 
 ## ติดตั้งและรัน
+
+**ติดตั้งสำเร็จรูป (แนะนำ):** ดาวน์โหลด NSIS installer จาก [GitHub Releases](https://github.com/NarDecH/batch-file-renamer/releases/latest) (ไฟล์ `*-setup.exe` + `*.exe.sig`) — รุ่นถัด ๆ ไปแอปจะอัปเดตตัวเองจากในโปรแกรม ไม่ต้องตามดาวน์โหลดอีก ข้อควรรู้:
+- แชนเนลอัปเดตใช้ NSIS — ถ้าเลือกติดตั้งรุ่นด้วย MSI ต้องติดตั้งด้วยมือรอบหนึ่งจึงจะถูก auto-update ดูแลต่อ
+- ดาวน์โหลดครั้งแรกจะเจอ SmartScreen (ยังไม่มี Authenticode cert — signature ของ updater ไม่ใช่ code signing)
 
 ```bash
 cd renamer
@@ -50,6 +55,15 @@ cargo run --bin renamer-cli -- --dry-run preview -f "D:\Photos" -r --include "*.
 cargo run --bin renamer-cli -- --apply preview -f "D:\Music" -r -p music
 cargo run --bin renamer-cli -- undo
 cargo run --bin renamer-cli -- presets
+```
+
+**สแกนหลายโฟลเดอร์ต่อคำสั่ง** — ทั้งสองรูปแบบ ได้ผลเหมือนกัน (แชร์ session เดียว):
+
+```bash
+# ใช้ -f ซ้ำ
+cargo run --bin renamer-cli -- preview -f "D:\TripA" -f "D:\TripB" -r -p photos
+# หรือคั่นด้วย ;
+cargo run --bin renamer-cli -- preview -f "D:\TripA;D:\TripB" -r -p photos
 ```
 
 Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo · 2 สแกน/พรีวิวล้มเหลว · 3 rename บางรายการล้มเหลว
@@ -84,7 +98,7 @@ cd renamer
 npm test          # frontend IPC/preview/undo tests (8 tests)
 npm run build     # production build ของ frontend
 cd src-tauri
-cargo test        # Rust unit + acceptance tests (17 tests)
+cargo test        # Rust unit + acceptance tests (19 tests)
 cargo bench       # benchmark พรีวิว 10k ไฟล์ × 5 กฎ
 ```
 
