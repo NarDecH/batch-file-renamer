@@ -127,7 +127,9 @@ jobs:
             platforms = @{
               "windows-x86_64" = @{
                 signature = $signature
-                url = "https://github.com/$repo/releases/download/${{ github.ref_name }}/" + $nsisExe.Name
+                # URL-encode the asset filename (e.g. "Batch Renamer_1.2.3_x64-setup.exe" -> ...Renamer_1.2.3...%20...) — GitHub requires %20, otherwise the updater download 404s
+                $nsisAsset = ($nsisExe.Name -replace ' ', '%20')
+                url = "https://github.com/$repo/releases/download/${{ github.ref_name }}/" + $nsisAsset
               }
             }
           }
