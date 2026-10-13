@@ -117,8 +117,10 @@ jobs:
           $sig = Get-ChildItem "renamer/src-tauri/target/release/bundle/nsis/*.exe.sig" | Select-Object -First 1
           if (-not $nsisExe -or -not $sig) { Write-Error "updater artifacts (.exe/.sig) not found"; exit 1 }
           $signature = (Get-Content $sig.FullName -Raw).Trim()
-          # URL-encode the asset filename (e.g. "Batch Renamer_1.2.3_x64-setup.exe" -> ...Renamer_...%20...) — GitHub requires %20, otherwise the updater download 404s
-          $nsisAsset = ($nsisExe.Name -replace ' ', '%20')
+          # GitHub normalizes spaces in uploaded asset names to '.' (e.g. local
+          # "Batch Renamer_1.2.3_x64-setup.exe" is stored as "Batch.Renamer_1.2.3_x64-setup.exe"),
+          # so the manifest URL must match the normalized name — with a space it 404s.
+          $nsisAsset = ($nsisExe.Name -replace ' ', '.')
           $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ssZ")
           $notes = Get-Content "$env:RUNTIME_NOTES_PATH" -Raw -ErrorAction SilentlyContinue
           if (-not $notes) { $notes = "Release v$tag" }
