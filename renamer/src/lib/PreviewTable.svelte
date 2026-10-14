@@ -2,8 +2,9 @@
   // Virtualized table: renders only the visible slice of rows so 100k rows
   // scroll smoothly.
   import { t } from "../i18n.svelte.js";
+  import { filterItems } from "./filters.js";
 
-  let { items = [], search = "", onManualEdit } = $props();
+  let { items = [], search = "", statusFilter = "all", onManualEdit } = $props();
 
   const ROW_H = 28;
   let viewport;
@@ -12,15 +13,7 @@
   let editingId = $state(null);
   let editValue = $state("");
 
-  const filtered = $derived(
-    search
-      ? items.filter((i) =>
-          (i.oldName + " " + i.newName + " " + i.parent)
-            .toLowerCase()
-            .includes(search.toLowerCase())
-        )
-      : items
-  );
+  const filtered = $derived(filterItems(items, search, statusFilter));
 
   const start = $derived(Math.max(0, Math.floor(scrollTop / ROW_H) - 5));
   const end = $derived(

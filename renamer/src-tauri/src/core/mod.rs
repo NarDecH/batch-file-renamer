@@ -1,6 +1,7 @@
 //! Core engine: pure logic, no UI imports. Used by both GUI and CLI.
 
 pub mod executor;
+pub mod csv;
 pub mod logger;
 pub mod metadata;
 pub mod models;

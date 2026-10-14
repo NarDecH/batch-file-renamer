@@ -15,9 +15,9 @@
 
 ## ฟีเจอร์
 
-- **นำเข้า:** ปุ่มเลือกโฟลเดอร์แบบ native dialog, recursive + กำหนดความลึก, กรอง wildcard/regex/ขนาด/วันที่, natural sort
+- **นำเข้า:** ปุ่มเลือกโฟลเดอร์แบบ native dialog สแกนทันทีหลังเลือก, ลากโฟลเดอร์จาก Explorer ลงหน้าต่างได้ (drag & drop = เพิ่มเข้าชุด), recursive + กำหนดความลึก, กรอง wildcard/regex/ขนาด/วันที่, natural sort, เพิ่มหลายโฟลเดอร์ต่อชุด
 - **กฎ 14 ประเภท:** Replace, Regex, Insert, Remove, Case, Numbering, Extension, Date/Time, Metadata (EXIF + แท็กเพลง), Template, Clean up, Swap, Import List (CSV/TXT), Hash/UUID — ซ้อนกันได้ ลากสลับลำดับได้ เปิด/ปิดรายกฎได้
-- **Live Preview:** ตาราง virtualized ลื่นแม้แสนแถว, ไฮไลต์ส่วนที่เปลี่ยน, สีสถานะ (เขียว/เหลือง/แดง/เทา), แก้ชื่อใหม่ด้วยมือได้ (ดับเบิลคลิก)
+- **Live Preview:** ตาราง virtualized ลื่นแม้แสนแถว, ไฮไลต์ส่วนที่เปลี่ยน, สีสถานะ (เขียว/เหลือง/แดง/เทา), แก้ชื่อใหม่ด้วยมือได้ (ดับเบิลคลิก), ค้นหาในตาราง + กรองตามสถานะ, ส่งออกเป็น CSV ตามสิ่งที่กรองอยู่ (UTF-8 BOM เปิดกับ Excel ได้ตรง)
 - **ปลอดภัย:** ตรวจชื่อซ้ำ/ชื่อสงวน Windows/อักขระต้องห้าม, เลือกจัดการชนชื่อได้ 3 โหมด, journal write-ahead, rollback อัตโนมัติเมื่อยกเลิก/ล้มเหลว
 - **Undo:** ย้อนหลังได้แม้ปิดโปรแกรมแล้ว (journal บนดิสก์) + **แผงประวัติการเปลี่ยนชื่อทั้งชุด** ใน GUI — กด "ย้อนกลับถึงจุดนี้" ต่อ batch (ย้อนชุดกลางจะถอนทุกชุดที่ใหม่กว่าพร้อมกัน; CLI มี `undo` ให้ batch ตัวเองด้วย)
 - **Progress แบบ real-time** ระหว่างเปลี่ยนชื่อ + ปุ่มยกเลิก
@@ -95,10 +95,10 @@ Exit codes: 0 สำเร็จ · 1 ไม่มีอะไรให้ undo 
 
 ```bash
 cd renamer
-npm test          # frontend IPC/preview/undo tests (8 tests)
+npm test          # frontend IPC/preview/undo/filter tests (12 tests)
 npm run build     # production build ของ frontend
 cd src-tauri
-cargo test        # Rust unit + acceptance tests (19 tests)
+cargo test        # Rust unit + acceptance tests (27 tests)
 cargo bench       # benchmark พรีวิว 10k ไฟล์ × 5 กฎ
 ```
 

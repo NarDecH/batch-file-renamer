@@ -6,8 +6,11 @@
   import UndoHistory from "./lib/UndoHistory.svelte";
   import Updater from "./lib/Updater.svelte";
   import { requestPreview } from "./lib/previewBridge.js";
+  import { filterItems } from "./lib/filters.js";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
+  import { getCurrentWebview } from "@tauri-apps/api/webview";
+  import { save } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
   import { t, ui } from "./i18n.svelte.js";
 
@@ -28,6 +31,8 @@
   let progressText = "";
   let progress = { done: 0, total: 0 };
   let search = "";
+  let statusFilter = "all";
+  let exporting = false;
   let undoBatches = [];
   let previewTimer = null;
   let unlistenProgress = null;
@@ -40,17 +45,34 @@
       progress = { done: e.payload.done, total: e.payload.total };
     }).then((un) => (unlistenProgress = un));
     invoke("list_undo_history").then((b) => (undoBatches = b)).catch(() => {});
-    return () => unlistenProgress?.();
+    // Drag & drop folders from Explorer -> append to the current working set
+    let unlistenDrag = null;
+    getCurrentWebview()
+      .onDragDropEvent(async (event) => {
+        if (event.payload.type === "drop" && event.payload.paths?.length) {
+          const paths = event.payload.paths.join(";");
+          scanPath = scanPath ? scanPath + ";" + paths : paths;
+          await doScan(true, paths);
+        }
+      })
+      .then((un) => (unlistenDrag = un));
+    return () => {
+      unlistenProgress?.();
+      unlistenDrag?.();
+    };
   });
 
-  export async function doScan(append = false) {
+  // append=true keeps existing entries; pathsOverride scans only those paths
+  // (used by "+ add folders" and drag&drop so re-sending the whole field
+  // cannot duplicate entries already in the set).
+  export async function doScan(append = false, pathsOverride = null) {
     scanning = true;
     progressText = t("scanning");
     try {
       const mb = (v) => (v == null || v === "" || isNaN(v) ? null : Math.round(Number(v) * 1024 * 1024));
       const dateMs = (d) => (d ? new Date(d + "T00:00:00").getTime() : null);
       const opts = {
-        path: scanPath,
+        path: pathsOverride ?? scanPath,
         recursive,
         maxDepth: 0,
         scope: "both",
@@ -141,6 +163,30 @@
     return refreshPreview();
   }
 
+  // Export the CURRENT VIEW (same filters as the table) to a CSV file
+  export async function doExportCsv() {
+    const rows = filterItems(items, search, statusFilter);
+    if (rows.length === 0) {
+      alert(t("csvEmpty"));
+      return;
+    }
+    const path = await save({
+      title: t("exportCsv"),
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+      defaultPath: "renamer-preview.csv",
+    });
+    if (!path) return;
+    exporting = true;
+    try {
+      const n = await invoke("export_preview_csv", { items: rows, path });
+      alert(t("csvSaved").replace("{n}", n));
+    } catch (e) {
+      alert(t("updateError") + ": " + e);
+    } finally {
+      exporting = false;
+    }
+  }
+
   async function onManualEdit(id, newName) {
     await invoke("set_manual_name", { id, name: newName });
     await refreshPreview();
@@ -175,8 +221,19 @@
       onRulesChanged={onRulesChanged}
     />
     <div class="table-pane">
-      <input class="search" type="search" placeholder={t("search")} bind:value={search} />
-      <PreviewTable {items} {search} onManualEdit={onManualEdit} />
+      <div class="pane-bar">
+        <input class="search" type="search" placeholder={t("search")} bind:value={search} />
+        <select bind:value={statusFilter} title={t("statusFilter")}>
+          <option value="all">{t("statusAll")}</option>
+          <option value="ready">{t("ready")}</option>
+          <option value="unchanged">{t("unchanged")}</option>
+          <option value="warning">{t("warnings")}</option>
+          <option value="error">{t("errors")}</option>
+          <option value="manual">{t("manual")}</option>
+        </select>
+        <button class="ghost" onclick={doExportCsv} disabled={exporting} title={t("exportHint")}>⤓ {t("exportCsv")}</button>
+      </div>
+      <PreviewTable {items} {search} {statusFilter} onManualEdit={onManualEdit} />
       <UndoHistory bind:batches={undoBatches} on:undone={onUndoDone} />
     </div>
   </div>
@@ -234,12 +291,29 @@
     min-width: 0;
     padding: 8px;
   }
-  .search {
-    padding: 6px 10px;
+  .pane-bar {
+    display: flex;
+    gap: 8px;
     margin-bottom: 6px;
+    align-items: center;
+  }
+  .search {
+    flex: 1;
+    padding: 6px 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--panel);
     color: var(--text);
   }
+  .pane-bar select,
+  .pane-bar button {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .pane-bar button:disabled { opacity: 0.5; cursor: default; }
 </style>

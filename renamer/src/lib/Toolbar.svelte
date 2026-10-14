@@ -4,10 +4,22 @@
 
   let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), minSizeMb = $bindable(null), maxSizeMb = $bindable(null), modifiedAfter = $bindable(""), modifiedBefore = $bindable(""), onSettingsChanged, onScan, scanning } = $props();
 
-  async function browse() {
+  // Picking folders with the native dialog now scans immediately:
+  // - browse(false): picked folders replace the working set
+  // - browse(true):  picked folders are appended to the current set
+  async function browse(append = false) {
     const picked = await open({ directory: true, multiple: true, title: t("scanPath") });
-    if (Array.isArray(picked)) scanPath = picked.join(";");
-    else if (typeof picked === "string") scanPath = picked;
+    if (!picked) return;
+    const paths = Array.isArray(picked) ? picked.join(";") : picked;
+    if (append) {
+      // Only scan the NEW paths (backend append would duplicate if we re-scanned
+      // the whole field), but keep the field showing the full set.
+      scanPath = scanPath ? scanPath + ";" + paths : paths;
+      await onScan?.(true, paths);
+    } else {
+      scanPath = paths;
+      await onScan?.(false);
+    }
   }
 </script>
 
@@ -22,7 +34,7 @@
   <input class="date" type="date" title="modified from" bind:value={modifiedAfter} />
   <input class="date" type="date" title="modified to" bind:value={modifiedBefore} />
   <button class="primary" onclick={() => onScan(false)} disabled={scanning}>{t("scan")}</button>
-  <button onclick={() => onScan(true)} disabled={scanning || !scanPath} title="Add folders to the current set">+ {t("addFolders")}</button>
+  <button onclick={() => browse(true)} disabled={scanning} title="Pick folders to add to the current set (scans right away)">+ {t("addFolders")}</button>
 
   <select bind:value={applyTo} onchange={() => onSettingsChanged?.()} title={t("applyTo")}>
     <option value="name">name</option>
