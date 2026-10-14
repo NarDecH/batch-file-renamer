@@ -42,6 +42,7 @@ pub fn run() {
             commands::list_presets,
             commands::parse_import_list,
             commands::export_preview_csv,
+            commands::export_mapping_csv,
             commands::log_file_path,
         ])
         .run(tauri::generate_context!())

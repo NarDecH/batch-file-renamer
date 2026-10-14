@@ -62,6 +62,21 @@ pub fn rows_to_csv(rows: &[ExportRow]) -> String {
     format!("\u{feff}{}", out)
 }
 
+/// Build an old,new mapping CSV (no header, same shape as the Import List
+/// rule accepts) so an exported set can be re-imported later.
+pub fn rows_to_map_csv(rows: &[ExportRow]) -> String {
+    let mut out = String::with_capacity(rows.len() * 32 + 2);
+    for r in rows {
+        let line = format!(
+            "{},{}\r\n",
+            escape_field(&r.old_name),
+            escape_field(&r.new_name)
+        );
+        out.push_str(&line);
+    }
+    format!("\u{feff}{}", out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,6 +122,19 @@ mod tests {
         let line = csv.lines().nth(1).unwrap();
         // size column must be empty for directories
         assert!(line.contains(",,"), "line: {}", line);
+    }
+
+    #[test]
+    fn map_csv_shape_matches_import_list() {
+        let csv = rows_to_map_csv(&[
+            row("ready", "a.jpg", "b.jpg", None),
+            row("error", "x,y.jpg", "new.jpg", Some("dupe")),
+        ]);
+        assert!(csv.starts_with('\u{feff}'));
+        assert!(csv.contains("a.jpg,b.jpg\r\n"));
+        // fields containing a comma are quoted, no header row
+        assert!(csv.contains("\"x,y.jpg\",new.jpg"));
+        assert!(!csv.contains("status,old_name"));
     }
 
     #[test]

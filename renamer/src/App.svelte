@@ -33,6 +33,8 @@
   let search = "";
   let statusFilter = "all";
   let exporting = false;
+  const selectedCount = $derived(items.filter((i) => i.selected).length);
+  const allSelected = $derived(items.length > 0 && items.every((i) => i.selected));
   let undoBatches = [];
   let previewTimer = null;
   let unlistenProgress = null;
@@ -115,6 +117,26 @@
     previewTimer = setTimeout(refreshPreview, 200);
   }
 
+  // Export old,new name pairs for the WHOLE working set (for Import List)
+  export async function doExportMapping() {
+    if (items.length === 0) return;
+    const path = await save({
+      title: t("mappingHint"),
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+      defaultPath: "renamer-mapping.csv",
+    });
+    if (!path) return;
+    exporting = true;
+    try {
+      const n = await invoke("export_mapping_csv", { items, path });
+      alert(t("csvSaved").replace("{n}", n));
+    } catch (e) {
+      alert(t("updateError") + ": " + e);
+    } finally {
+      exporting = false;
+    }
+  }
+
   export function onRulesChanged(newRules) {
     rules = newRules;
     schedulePreview();
@@ -161,6 +183,45 @@
 
   function onUndoDone() {
     return refreshPreview();
+  }
+
+  // Clear the whole working set (rules/presets untouched)
+  export async function doClearEntries() {
+    if (items.length === 0) return;
+    if (!confirm(t("confirmClear"))) return;
+    try {
+      await invoke("clear_entries");
+      await refreshPreview();
+    } catch (e) {
+      alert("ผิดพลาด: " + e);
+    }
+  }
+
+  function onToggleSelect(id, checked) {
+    invoke("set_selection", { ids: [id], selected: checked })
+      .catch(console.error);
+    // Optimistic local update; full refresh happens on the next preview round
+    const it = items.find((i) => i.id === id);
+    if (it) it.selected = checked;
+  }
+
+  function onSelectAll(checked) {
+    invoke("set_selection", { ids: [], selected: checked })
+      .then(() => refreshPreview())
+      .catch(console.error);
+  }
+
+  async function doRemoveSelected() {
+    const ids = items.filter((i) => i.selected).map((i) => i.id);
+    if (ids.length === 0) return;
+    if (!confirm(t("confirmRemoveSelected").replace("{n}", ids.length))) return;
+    try {
+      await invoke("remove_entries", { ids });
+      alert(t("removed").replace("{n}", ids.length));
+      await refreshPreview();
+    } catch (e) {
+      alert("ผิดพลาด: " + e);
+    }
   }
 
   // Export the CURRENT VIEW (same filters as the table) to a CSV file
@@ -213,6 +274,7 @@
     bind:modifiedBefore
     onSettingsChanged={schedulePreview}
     onScan={doScan}
+    onClear={doClearEntries}
     scanning={scanning}
   />
   <div class="main">
@@ -231,9 +293,19 @@
           <option value="error">{t("errors")}</option>
           <option value="manual">{t("manual")}</option>
         </select>
+        <input
+          id="sel-all"
+          type="checkbox"
+          checked={allSelected}
+          oninput={(e) => onSelectAll(e.target.checked)}
+          title={t("selectAllHint")}
+        />
+        <label class="sel-count" for="sel-all">{selectedCount} {t("selected")}</label>
+        <button class="ghost" onclick={doRemoveSelected} disabled={exporting || selectedCount === 0} title={t("removeSelectedHint")}>🗑 {t("removeSelected")}</button>
         <button class="ghost" onclick={doExportCsv} disabled={exporting} title={t("exportHint")}>⤓ {t("exportCsv")}</button>
+        <button class="ghost" onclick={doExportMapping} disabled={exporting || items.length === 0} title={t("mappingHint")}>⤓ {t("exportMapping")}</button>
       </div>
-      <PreviewTable {items} {search} {statusFilter} onManualEdit={onManualEdit} />
+      <PreviewTable {items} {search} {statusFilter} onManualEdit={onManualEdit} onToggleSelect={onToggleSelect} />
       <UndoHistory bind:batches={undoBatches} on:undone={onUndoDone} />
     </div>
   </div>
@@ -304,6 +376,11 @@
     border-radius: 6px;
     background: var(--panel);
     color: var(--text);
+  }
+  .sel-count {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
   }
   .pane-bar select,
   .pane-bar button {

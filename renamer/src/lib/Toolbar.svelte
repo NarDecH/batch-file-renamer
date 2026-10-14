@@ -2,7 +2,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { t, setLang, setTheme, ui } from "../i18n.svelte.js";
 
-  let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), minSizeMb = $bindable(null), maxSizeMb = $bindable(null), modifiedAfter = $bindable(""), modifiedBefore = $bindable(""), onSettingsChanged, onScan, scanning } = $props();
+  let { scanPath = $bindable(""), recursive = $bindable(true), filterGlobs = $bindable(""), applyTo = $bindable("full"), conflictStrategy = $bindable("block"), minSizeMb = $bindable(null), maxSizeMb = $bindable(null), modifiedAfter = $bindable(""), modifiedBefore = $bindable(""), onSettingsChanged, onScan, onClear, scanning } = $props();
 
   // Picking folders with the native dialog now scans immediately:
   // - browse(false): picked folders replace the working set
@@ -33,8 +33,12 @@
   <input class="num" type="number" min="0" step="0.1" placeholder="max MB" title="maxSize" bind:value={maxSizeMb} />
   <input class="date" type="date" title="modified from" bind:value={modifiedAfter} />
   <input class="date" type="date" title="modified to" bind:value={modifiedBefore} />
-  <button class="primary" onclick={() => onScan(false)} disabled={scanning}>{t("scan")}</button>
-  <button onclick={() => browse(true)} disabled={scanning} title="Pick folders to add to the current set (scans right away)">+ {t("addFolders")}</button>
+  <button class="primary" onclick={() => browse(false)} disabled={scanning} title={t("openHint")}>
+    📂 {t("openScan")}
+  </button>
+  <button onclick={() => browse(true)} disabled={scanning} title={t("addHint")}>✚ {t("addFolders")}</button>
+  <button onclick={() => onScan(false)} disabled={scanning || !scanPath} title={t("rescanHint")}>{t("scan")}</button>
+  <button class="danger" onclick={() => onClear?.()} disabled={scanning} title={t("clearHint")}>🗑 {t("clearList")}</button>
 
   <select bind:value={applyTo} onchange={() => onSettingsChanged?.()} title={t("applyTo")}>
     <option value="name">name</option>
@@ -95,6 +99,9 @@
     border-color: var(--accent);
     color: #fff;
     font-weight: 600;
+  }
+  button.danger {
+    color: var(--err);
   }
   button:disabled { opacity: 0.5; cursor: default; }
   .spacer { flex: 1; }

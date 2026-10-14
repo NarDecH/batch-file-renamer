@@ -343,6 +343,20 @@ pub async fn export_preview_csv(items: Vec<crate::core::csv::ExportRow>, path: S
     Ok(n)
 }
 
+/// Export old,new name pairs (whole working set) for re-use with the Import List rule.
+#[tauri::command]
+pub async fn export_mapping_csv(items: Vec<crate::core::csv::ExportRow>, path: String) -> Result<usize, String> {
+    log::info!("export_mapping_csv: {} rows -> {}", items.len(), path);
+    let csv = crate::core::csv::rows_to_map_csv(&items);
+    let p = path.clone();
+    let n = items.len();
+    tauri::async_runtime::spawn_blocking(move || std::fs::write(&p, csv.as_bytes()))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("cannot write '{}': {}", path, e))?;
+    Ok(n)
+}
+
 #[tauri::command]
 pub async fn log_file_path() -> Result<String, String> {
     Ok(crate::core::logger::current_log_file().to_string_lossy().into_owned())

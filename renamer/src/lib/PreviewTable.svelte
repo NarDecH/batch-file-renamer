@@ -4,7 +4,7 @@
   import { t } from "../i18n.svelte.js";
   import { filterItems } from "./filters.js";
 
-  let { items = [], search = "", statusFilter = "all", onManualEdit } = $props();
+  let { items = [], search = "", statusFilter = "all", onManualEdit, onToggleSelect } = $props();
 
   const ROW_H = 28;
   let viewport;
@@ -99,6 +99,7 @@
     <table>
       <thead>
         <tr>
+          <th style="width:34px"></th>
           <th style="width:90px">{t("status")}</th>
           <th>{t("oldName")}</th>
           <th>{t("newName")}</th>
@@ -110,6 +111,14 @@
       <tbody style="transform: translateY({start * ROW_H}px)">
         {#each visible as item (item.id)}
           <tr class="row {statusClass(item.status)}" style="height:{ROW_H}px">
+            <td>
+              <input
+                type="checkbox"
+                checked={item.selected !== false}
+                oninput={(e) => onToggleSelect?.(item.id, e.target.checked)}
+                title="{item.oldName}"
+              />
+            </td>
             <td class="status-cell">
               {item.status === "ready" ? "✓" : item.status === "unchanged" ? "·" : item.status === "warning" ? "⚠" : item.status === "error" ? "✗" : "✎"}
               {#if item.message}<span class="msg" title={item.message}>ⓘ</span>{/if}
