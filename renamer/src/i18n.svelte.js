@@ -73,6 +73,7 @@ export const translations = {
     updateDismiss: "ภายหลัง",
     updateError: "อัปเดตไม่สำเร็จ",
     updateStuck: "การติดตั้งอัปเดตใช้เวลานานหรือติดขัด — หากไม่เสร็จภายในไม่กี่นาที ปิดโปรแกรมแล้วติดตั้งจาก setup โดยตรง",
+    updateCheckFail: "ตรวจอัปเดตไม่สำเร็จ",
   },
   en: {
     scanPath: "Folder:",
@@ -146,6 +147,7 @@ export const translations = {
     updateDismiss: "Later",
     updateError: "Update failed",
     updateStuck: "The update install is taking unusually long or appears stuck — if it does not finish soon, close the app and install directly from the setup file",
+    updateCheckFail: "Update check failed",
   },
 };
 

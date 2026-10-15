@@ -45,6 +45,9 @@
       }
     } catch (e) {
       console.warn("updater check failed:", e);
+      // Surface it — a silently failed update check looks identical to
+      // &ldquo;everything is current&rdquo; and nobody would ever know.
+      notify?.("err", `${t("updateCheckFail")}: ${e}`, 20_000);
     }
   }
 
