@@ -14,28 +14,31 @@
   import { onMount } from "svelte";
   import { t, ui } from "./i18n.svelte.js";
 
-  let items = [];
-  let summary = { total: 0, ready: 0, unchanged: 0, warnings: 0, errors: 0 };
-  let rules = [];
-  let applyTo = "full";
-  let conflictStrategy = "block";
-  let scanPath = "";
-  let recursive = true;
-  let filterGlobs = "";
-  let minSizeMb = null;
-  let maxSizeMb = null;
-  let modifiedAfter = "";
-  let modifiedBefore = "";
-  let scanning = false;
-  let renaming = false;
-  let progressText = "";
-  let progress = { done: 0, total: 0 };
-  let search = "";
-  let statusFilter = "all";
-  let exporting = false;
+  // Svelte 5: this component uses runes ($derived below), so every reactive
+  // top-level variable MUST be $state — plain `let` silently stops updating
+  // the DOM (preview table showed nothing while the backend had results).
+  let items = $state([]);
+  let summary = $state({ total: 0, ready: 0, unchanged: 0, warnings: 0, errors: 0 });
+  let rules = $state([]);
+  let applyTo = $state("full");
+  let conflictStrategy = $state("block");
+  let scanPath = $state("");
+  let recursive = $state(true);
+  let filterGlobs = $state("");
+  let minSizeMb = $state(null);
+  let maxSizeMb = $state(null);
+  let modifiedAfter = $state("");
+  let modifiedBefore = $state("");
+  let scanning = $state(false);
+  let renaming = $state(false);
+  let progressText = $state("");
+  let progress = $state({ done: 0, total: 0 });
+  let search = $state("");
+  let statusFilter = $state("all");
+  let exporting = $state(false);
   const selectedCount = $derived(items.filter((i) => i.selected).length);
   const allSelected = $derived(items.length > 0 && items.every((i) => i.selected));
-  let undoBatches = [];
+  let undoBatches = $state([]);
   let previewTimer = null;
   let unlistenProgress = null;
 

@@ -32,6 +32,7 @@ pub fn run() {
             commands::set_manual_name,
             commands::set_selection,
             commands::remove_entries,
+            commands::clear_entries,
             commands::apply_renames,
             commands::undo_last,
             commands::undo_batch,
