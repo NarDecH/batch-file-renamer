@@ -92,6 +92,50 @@ jobs:
           Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
           npm run tauri build
         shell: pwsh
+      - name: NSIS quiet smoke test (fresh + already-installed)
+        working-directory: renamer
+        shell: pwsh
+        run: |
+          # guard: regressions in our NSIS/updater config must show up here.
+          # Hidden "Already Installed" wizard hang = process never exits = fail.
+          $setup = Get-ChildItem "src-tauri\target\release\bundle\nsis\*-setup.exe" | Select-Object -First 1
+          if (-not $setup) { Write-Error "nsis setup.exe not found"; exit 1 }
+          $appExe = "$env:LOCALAPPDATA\Batch Renamer\renamer.exe"
+          foreach ($phase in 1..2) {
+            $label = if ($phase -eq 1) { "fresh" } else { "already-installed" }
+            Write-Host ""Installing ($label): $($setup.FullName)""
+            $p = Start-Process -FilePath $setup.FullName -ArgumentList "/S" -PassThru
+            Start-Sleep -Seconds 5
+            if (-not $p.HasExited -and $p.MainWindowHandle -ne [IntPtr]::Zero) {
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+              Write-Error "$label /S spawned a visible UI window (silent mode broken)"; exit 1
+            }
+            if (-not $p.WaitForExit(300000)) {
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+              Write-Error "$label /S still running after 300s (hidden wizard hang)"; exit 1
+            }
+            if ($p.ExitCode -ne 0) {
+              Write-Error "$label /S exited with code $($p.ExitCode)"; exit 1
+            }
+            # NSIS may copy itself and finish in a helper process - allow it to drain.
+            foreach ($drain in 1..15) {
+              $left = Get-Process -Name setup -ErrorAction SilentlyContinue
+              if (-not $left) { break }
+              Start-Sleep -Seconds 3
+            }
+            if (Get-Process -Name setup -ErrorAction SilentlyContinue) {
+              Write-Error "$label /S left a lingering installer process"; exit 1
+            }
+            if (-not (Test-Path $appExe)) {
+              Write-Error "$label /S completed but app binary missing at $appExe"; exit 1
+            }
+            Write-Host "NSIS /S OK ($label): installer finished, no visible UI, no lingering process"
+          }
+          $installed = (Get-Item $appExe).VersionInfo.FileVersion
+          Write-Host "installed app FileVersion: $installed"
+          if ($installed -ne "${{ github.ref_name }}".TrimStart("v")) {
+            Write-Error "installed app version ($installed) does not match tag"; exit 1
+          }
       - name: E2E UIA on the real built app window
         working-directory: renamer
         shell: pwsh

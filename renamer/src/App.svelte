@@ -83,6 +83,11 @@
     notice = { kind: "", text: "" };
   }
 
+  // Updater callback bridge (watchdog banners live in the same notice strip)
+  function onUpdaterNotice(kind, text, ms) {
+    showNotice(kind, text, ms);
+  }
+
   // append=true keeps existing entries; pathsOverride scans only those paths
   // (used by "+ add folders" and drag&drop so re-sending the whole field
   // cannot duplicate entries already in the set).
@@ -336,7 +341,7 @@
     </div>
   </div>
   <StatusBar {summary} {progressText} onRename={doRename} onUndo={doUndo} {renaming} {progress} />
-  <Updater />
+  <Updater notify={onUpdaterNotice} />
 </div>
 
 <style>

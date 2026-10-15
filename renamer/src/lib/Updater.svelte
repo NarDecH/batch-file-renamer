@@ -3,9 +3,35 @@
   import { relaunch } from "@tauri-apps/plugin-process";
   import { t } from "../i18n.svelte.js";
 
-  let state = "idle"; // idle | available | downloading | error
-  let message = "";
-  let update = null;
+  let { notify = null } = $props(); // (kind, text, ms) -> non-blocking notice in App.svelte
+
+  let state = $state("idle"); // idle | available | downloading | stuck | error
+  let message = $state("");
+  let update = $state(null);
+
+  // Watchdog: a pending downloadAndInstall() used to wait silently forever when
+  // the NSIS installer stalled on a hidden wizard page (v0.12.2 bug). Now the
+  // app tells the user after a grace period instead of waiting quietly.
+  const STUCK_AFTER_MS = 90_000;
+  let stuckTimer = null;
+
+  function startWatchdog() {
+    stopWatchdog();
+    stuckTimer = setTimeout(() => {
+      stuckTimer = null;
+      state = "stuck";
+      message = t("updateStuck");
+      console.error(`[updater] install still pending after ${STUCK_AFTER_MS / 1000}s — flagging as stuck`);
+      notify?.("err", message, 0); // 0 = stays until the user closes it
+    }, STUCK_AFTER_MS);
+  }
+
+  function stopWatchdog() {
+    if (stuckTimer) {
+      clearTimeout(stuckTimer);
+      stuckTimer = null;
+    }
+  }
 
   async function checkNow() {
     try {
@@ -23,11 +49,14 @@
     if (!update) return;
     state = "downloading";
     message = t("updateDownloading");
+    startWatchdog();
     try {
       await update.downloadAndInstall();
+      stopWatchdog();
       // Windows: installer exits for us; relaunch otherwise.
       await relaunch();
     } catch (e) {
+      stopWatchdog();
       console.error(e);
       message = `${t("updateError")}: ${e}`;
       state = "error";
@@ -37,12 +66,12 @@
   checkNow();
 </script>
 
-{#if state === "available" || state === "downloading" || state === "error"}
-  <div class="updater" role="status">
+{#if state === "available" || state === "downloading" || state === "stuck" || state === "error"}
+  <div class="updater updater-{state}" role="status">
     <span>{message}</span>
     {#if state === "available"}
-      <button class="primary" on:click={install}>{t("updateInstall")}</button>
-      <button class="ghost" on:click={() => (state = "idle")}>{t("updateDismiss")}</button>
+      <button class="primary" onclick={install}>{t("updateInstall")}</button>
+      <button class="ghost" onclick={() => { state = "idle"; stopWatchdog(); }}>{t("updateDismiss")}</button>
     {/if}
   </div>
 {/if}
@@ -59,6 +88,11 @@
     color: var(--text, inherit);
     z-index: 50;
   }
+  .updater-stuck,
+  .updater-error {
+    border-top-color: var(--err, #f87171);
+    color: var(--err, #f87171);
+  }
   .primary {
     padding: 3px 12px;
     border: 1px solid var(--accent, #60a5fa);
@@ -74,6 +108,5 @@
     background: transparent;
     color: var(--muted, #94a3b8);
     border-radius: 6px;
-    cursor: pointer;
   }
 </style>

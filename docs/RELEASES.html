@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Release timeline 0.12.0 → 0.12.3 — Batch File Renamer</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site">
+  <h1>🕐 <span class="accent">Release</span> timeline 0.12.0 → 0.12.3</h1>
+  <p>Four rapid releases, two real bugs caught on a real machine, and what changed so they cannot ship again.</p>
+  <p style="margin-top:10px">
+    <span class="badge ok">Security fix</span>
+    <span class="badge ok">Updater fix</span>
+    <span class="badge ok">E2E on the real built app</span>
+  </p>
+</header>
+<nav class="toc">
+  <a href="index.html">หน้าแรก</a>
+  <a href="README.html">README</a>
+  <a href="RESEARCH.html">Research</a>
+  <a href="CHANGELOG.html">Changelog</a>
+  <a href="RELEASES.html">Timeline 0.12.x</a>
+</nav>
+<main>
+
+<h2><span class="no">🗓️</span>Timeline</h2>
+<div class="cards">
+  <div class="card">
+    <h3>v0.12.0 — baseline</h3>
+    <p>First version whose updater (signed install + auto-update) was exercised on a real user machine — which immediately surfaced two unverified integration points: the WebView2 dialog chain and the NSIS update path.</p>
+  </div>
+  <div class="card">
+    <h3>v0.12.1 — preview table rendered empty</h3>
+    <p>Backend log clearly had preview results, but the DOM showed nothing. Cause: Svelte 5 runes — a top-level <code>let</code> stops being reactive; every reactive variable must be <code>$state</code>. Also registered the missing <code>clear_entries</code> command (Clear button worked in the frontend but had no backend command attached).</p>
+  </div>
+  <div class="card">
+    <h3>v0.12.2 — silent dialogs (the security-critical one)</h3>
+    <p><strong>Current WebView2 runtimes auto-accept <code>window.confirm()</code> without showing anything.</strong> Proven on both dev and the built installer: pressing "Clear list", "Remove selected" or "Rename" destroyed data with <em>no confirmation at all</em>. Fix: every confirmation moved to native <code>plugin-dialog</code> (<code>ask()</code> / <code>message()</code>) — real task dialogs. Also added a non-blocking notice banner (coloured, close button, auto-dismiss after 8s) and wired an E2E UIA step into the CI release job (ops/e2e.ps1: click Clear on the real built window, dialog appears, list empties only after Yes).</p>
+  </div>
+  <div class="card">
+    <h3>v0.12.3 — NSIS update hang on a hidden wizard page</h3>
+    <p>The in-app "Install &amp; restart" stalled: the updater's default install mode is <strong>passive</strong> (<code>/P</code>), and the Tauri NSIS template has a <code>PageReinstall</code> ("Already Installed") page that appears as a hidden modal and hangs the flow. Fix in <code>tauri.conf.json</code>: <code>plugins.updater.windows.installMode = "quiet"</code> (NSIS runs <code>/S</code> — the wizard pages are always skipped) and <code>nsis.installMode = "currentUser"</code> (same per-user install, no UAC). Proven on the real machine: one click → fully silent install in ~36s → app relaunches itself, log records <code>GUI starting (v0.12.3)</code>, registry <code>DisplayVersion = 0.12.3</code>. Plus a new watchdog: after 90s of a pending install the app logs it and shows a banner telling the user the install appears stuck and to install directly from the setup file, instead of waiting silently forever.</p>
+  </div>
+</div>
+
+<h2><span class="no">🧪</span>Evidence — the bugs were real, the fixes verified</h2>
+<table>
+  <tr><th>Issue</th><th>Actual symptom</th><th>Fix verification</th></tr>
+  <tr>
+    <td><strong>WebView2 auto-confirm</strong></td>
+    <td class="err">Click Clear → no dialog → all entries gone within a second (dev and built installer alike)</td>
+    <td class="ok">E2E on the real build: click Clear → real task dialog appears → data cleared <strong>only after Yes</strong></td>
+  </tr>
+  <tr>
+    <td><strong>NSIS updater hang</strong></td>
+    <td class="err">Click "Install &amp; restart" → no visible window → installer stuck until killed manually</td>
+    <td class="ok">Real machine: click → done in ~36s, log <code>GUI starting (v0.12.3)</code>, registry 0.12.3, table shows 25 real file rows</td>
+  </tr>
+</table>
+
+<h2><span class="no">⚙️</span>Anti-regression net (CI)</h2>
+<table>
+  <tr><th>Check</th><th>Guards</th></tr>
+  <tr><td><code>npm test</code> (frontend)</td><td>dialog bridge, preview state, i18n</td></tr>
+  <tr><td><code>cargo test</code> (core)</td><td>engine, journal, undo, preview pipeline</td></tr>
+  <tr><td>E2E UIA on the real built app (release job)</td><td>table shows real file rows; Clear → dialog → confirm → empty</td></tr>
+  <tr><td><em>New in v0.12.3:</em> NSIS quiet smoke test (release job)</td><td>installs <code>/S</code> twice (fresh + already-installed); fails the release if the installer: exceeds 300s, shows any visible UI, leaves a lingering <code>setup.exe</code>, drops the app binary, or installs a version that does not match the tag</td></tr>
+</table>
+
+<h2><span class="no">👆</span>What you should do, per version</h2>
+<table>
+  <tr><th>Currently on</th><th>Recommendation</th></tr>
+  <tr><td><strong>v0.12.2</strong> or newer</td><td>Press "Install &amp; restart" in the app as usual — verified to finish by itself</td></tr>
+  <tr><td><strong>v0.12.0 / v0.12.1 or older</strong></td><td>Install directly from <code>Batch.Renamer_0.12.3_x64-setup.exe</code> on the latest release — the old in-app updater may hit the same hidden wizard page</td></tr>
+  <tr><td>An update window sits silently</td><td>Watch the in-app banner; check Task Manager for a lingering <code>setup.exe</code>; close and run the latest release's setup.exe directly</td></tr>
+</table>
+
+</main>
+
+<footer>Batch File Renamer · Rust + Tauri 2 + Svelte · สร้างด้วย Codebuff</footer>
+</body>
+</html>
