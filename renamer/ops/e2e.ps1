@@ -47,6 +47,16 @@ $hw = [IntPtr]$win.Current.NativeWindowHandle
 [E2E]::SetForegroundWindow($hw) | Out-Null
 Start-Sleep -Milliseconds 500
 
+# If the non-blocking notice banner is up, its close (aria-label="close") button
+# is a Button control that precedes the toolbar in tree order and shifts the
+# toolbar button indices we rely on below. Wait (up to ~14s) for it to disappear.
+foreach ($round in 1..14) {
+  $probe = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+  $bannerUp = $false
+  foreach ($el in $probe) { if ($el.Current.Name -eq "close") { $bannerUp = $true; break } }
+  if ($bannerUp) { Start-Sleep -Seconds 1 } else { break }
+}
+
 # two passes: the Windows accessibility tree is built lazily on first query
 $els = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
 Start-Sleep -Milliseconds 300
@@ -89,7 +99,9 @@ if ($clear) {
   if (-not $clr) { Write-Output "CLEAR_BTN_NOT_FOUND"; exit 5 }
   if ($clr.Current.IsEnabled) {
     ($clr.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke()
-    Start-Sleep -Milliseconds 800
+    # Confirm dialog (plugin-dialog ask() -> native task dialog):
+    # a top-level #32770 window (DirectUIHWND content) with child Buttons "&Yes"/"&No".
+    # Find it via EnumWindows (UIA root-children misses it), press "&Yes" via BM_CLICK.
     Add-Type -TypeDefinition @'
 using System;
 using System.Text;
@@ -100,36 +112,56 @@ public static class ClrDlg {
   [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, EnumProc p, IntPtr l);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll")] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
-  [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr h);
   [DllImport("user32.dll")] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);
 }
 '@
     $pid2 = $win.Current.ProcessId
     $dlg = [IntPtr]::Zero
-    $cb = [ClrDlg+EnumProc]{ param($h, $l)
-      $p = 0; [ClrDlg]::GetWindowThreadProcessId($h, [ref]$p) | Out-Null
-      if ($p -eq $pid2 -and [ClrDlg]::IsWindowVisible($h)) {
-        $cn = New-Object System.Text.StringBuilder 64
-        [ClrDlg]::GetClassName($h, $cn, 64) | Out-Null
-        if ($cn.ToString() -eq "#32770") { $script:dlg = $h; return $false }
+    foreach ($round in 1..10) {
+      Start-Sleep -Milliseconds 400
+      $cb = [ClrDlg+EnumProc]{ param($h, $l)
+        $p = [uint32]0; [ClrDlg]::GetWindowThreadProcessId($h, [ref]$p) | Out-Null
+        if ($p -eq $pid2 -and [ClrDlg]::IsWindowVisible($h)) {
+          $cn = New-Object System.Text.StringBuilder 64
+          [ClrDlg]::GetClassName($h, $cn, 64) | Out-Null
+          if ($cn.ToString() -eq "#32770") { $script:dlg = $h; return $false }
+        }
+        return $true
       }
-      return $true
+      $script:dlg = [IntPtr]::Zero
+      [ClrDlg]::EnumWindows($cb, [IntPtr]::Zero) | Out-Null
+      if ($script:dlg -ne [IntPtr]::Zero) { break }
     }
-    $dlg = [IntPtr]::Zero
-    [ClrDlg]::EnumWindows($cb, [IntPtr]::Zero) | Out-Null
-    if ($dlg -eq [IntPtr]::Zero) { Write-Output "CONFIRM_DLG_NOT_FOUND"; exit 6 }
+    if ($script:dlg -eq [IntPtr]::Zero) { Write-Output "CONFIRM_DLG_NOT_FOUND"; exit 6 }
+    Write-Output ("CONFIRM_DLG_HWND=" + [int64]$script:dlg)
+    # press the Yes/OK button (Button child, id set by CtrlID is 0 for task dialogs)
     $ok = [IntPtr]::Zero
     $cb2 = [ClrDlg+EnumProc]{ param($h, $l)
       $cn = New-Object System.Text.StringBuilder 64
       [ClrDlg]::GetClassName($h, $cn, 64) | Out-Null
-      if ($cn.ToString() -match "Button" -and [ClrDlg]::GetDlgCtrlID($h) -eq 1) { $script:ok = $h; return $false }
+      $t = New-Object System.Text.StringBuilder 64
+      [ClrDlg]::GetWindowText($h, $t, 64) | Out-Null
+      # task dialog buttons localize; take the FIRST visible Button child (order is Yes, then No)
+      if ($cn.ToString() -match "Button" -and [ClrDlg]::IsWindowVisible($h) -and ($t.ToString().Length -gt 0) -and ($script:ok -eq [IntPtr]::Zero)) { $script:ok = $h; return $false }
       return $true
     }
-    $ok = [IntPtr]::Zero
-    [ClrDlg]::EnumChildWindows($dlg, $cb2, [IntPtr]::Zero) | Out-Null
-    if ($ok -eq [IntPtr]::Zero) { Write-Output "OK_BTN_NOT_FOUND"; exit 7 }
-    [ClrDlg]::SendMessageW($ok, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null  # BM_CLICK
+    $script:ok = [IntPtr]::Zero
+    [ClrDlg]::EnumChildWindows($script:dlg, $cb2, [IntPtr]::Zero) | Out-Null
+    if ($script:ok -eq [IntPtr]::Zero) { Write-Output "OK_BTN_NOT_FOUND"; exit 7 }
+    # Task-dialog buttons ignore BM_CLICK/InvokePattern — real mouse click at the
+    # button rect (via UIA bounding rect) is what lands the confirmation.
+    $okEl = [System.Windows.Automation.AutomationElement]::FromHandle($script:ok)
+    if (-not $okEl) { Write-Output "OK_UA_NOT_FOUND"; exit 7 }
+    $r = $okEl.Current.BoundingRectangle
+    $cx = [int]($r.Left + $r.Width / 2)
+    $cy = [int]($r.Top + $r.Height / 2)
+    [E2E]::SetCursorPos($cx, $cy) | Out-Null
+    Start-Sleep -Milliseconds 100
+    [E2E]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero) | Out-Null
+    [E2E]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) | Out-Null
+    Start-Sleep -Milliseconds 600
     Write-Output "CLEAR_CONFIRMED"
   } else { Write-Output "CLEAR_DISABLED" }
 }

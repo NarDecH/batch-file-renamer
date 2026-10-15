@@ -92,6 +92,46 @@ jobs:
           Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
           npm run tauri build
         shell: pwsh
+      - name: E2E UIA on the real built app window
+        working-directory: renamer
+        shell: pwsh
+        env:
+          RUNNER_TEMP_BITS: ${{ runner.temp }}
+        run: |
+          # Drive the REAL release app with Windows UIA (like a user would):
+          # set scan path, press Rescan, verify file rows appear; then Clear+confirm.
+          $exe = Join-Path (Get-Location) "src-tauri\target\release\renamer.exe"
+          if (-not (Test-Path $exe)) { Write-Error "app exe not found: $exe"; exit 1 }
+          $scanDir = Join-Path $env:RUNNER_TEMP_BITS "e2e-scan"
+          New-Item -ItemType Directory -Path $scanDir -Force | Out-Null
+          1..3 | ForEach-Object { Set-Content -Path (Join-Path $scanDir "file_$_.jpg") -Value "x" }
+          $app = Start-Process -FilePath $exe -PassThru
+          try {
+            # wait for the window to be reachable (retry e2e driver up to 6 times)
+            $out = "WINDOW_NOT_FOUND"; $out2 = "SKIPPED"
+            foreach ($i in 1..6) {
+              Start-Sleep -Seconds 5
+              $out = & powershell -NoProfile -ExecutionPolicy Bypass -File ops\e2e.ps1 -scanDir $scanDir
+              Write-Host "attempt ${i}: $out"
+              if (($LASTEXITCODE -eq 0) -and ($out -match "SCAN_TRIGGERED") -and ($out -match "VISIBLE_TEXT_HITS=(?!0)")) { break }
+              if (($LASTEXITCODE -eq 0) -and ($out -match "VISIBLE_TEXT_HITS")) { break }
+            }
+            if (($LASTEXITCODE -ne 0) -or ($out -join " ") -notmatch "VISIBLE_TEXT_HITS=" -or ($out -join " ") -match "VISIBLE_TEXT_HITS=0") {
+              Write-Error "E2E UIA failed: $($out -join ' | ')"; exit 1
+            }
+            Write-Host "E2E OK: table shows real file rows"
+            # Clear-list flow (button + confirm dialog + table becomes empty)
+            $out2 = & powershell -NoProfile -ExecutionPolicy Bypass -File ops\e2e.ps1 -skipScan -clear
+            Write-Host "clear run: $out2"
+            if ($LASTEXITCODE -ne 0) { Write-Error "E2E clear failed: $($out2 -join ' | ')"; exit 1 }
+            $after = & powershell -NoProfile -ExecutionPolicy Bypass -File ops\e2e.ps1 -skipScan
+            if (($after -join " ") -match "VISIBLE_TEXT_HITS=(?!0)") {
+              Write-Error "E2E clear did not empty the table: $($after -join ' | ')"; exit 1
+            }
+            Write-Host "E2E OK: clear-list + confirm emptied the table"
+          } finally {
+            if (-not $app.HasExited) { Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue }
+          }
       - name: Generate release notes from commits
         env:
           RUNTIME_NOTES_PATH: ${{ runner.temp }}/notes.md

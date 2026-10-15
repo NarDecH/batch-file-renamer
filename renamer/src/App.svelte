@@ -10,7 +10,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWebview } from "@tauri-apps/api/webview";
-  import { save } from "@tauri-apps/plugin-dialog";
+  import { save, ask, message } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
   import { t, ui } from "./i18n.svelte.js";
 
@@ -36,6 +36,10 @@
   let search = $state("");
   let statusFilter = $state("all");
   let exporting = $state(false);
+  // Non-blocking notice banner (replaces silent console-only failures and the
+  // blocking alert() popups for scan/preview results)
+  let notice = $state({ kind: "", text: "" }); // kind: ok | err
+  let noticeTimer = null;
   const selectedCount = $derived(items.filter((i) => i.selected).length);
   const allSelected = $derived(items.length > 0 && items.every((i) => i.selected));
   let undoBatches = $state([]);
@@ -67,6 +71,18 @@
     };
   });
 
+  // Non-blocking notice, auto-dismisses after a few seconds
+  function showNotice(kind, text, ms = 8000) {
+    clearTimeout(noticeTimer);
+    notice = { kind, text };
+    if (ms > 0) noticeTimer = setTimeout(() => (notice = { kind: "", text: "" }), ms);
+  }
+
+  function closeNotice() {
+    clearTimeout(noticeTimer);
+    notice = { kind: "", text: "" };
+  }
+
   // append=true keeps existing entries; pathsOverride scans only those paths
   // (used by "+ add folders" and drag&drop so re-sending the whole field
   // cannot duplicate entries already in the set).
@@ -96,8 +112,10 @@
       };
       await invoke("scan_paths", { opts, append });
       await refreshPreview();
+      if (summary.total > 0) showNotice("ok", t("scanDone").replace("{n}", summary.total));
     } catch (e) {
       console.error(e);
+      showNotice("err", t("scanFailed").replace("{e}", String(e)), 0);
     } finally {
       scanning = false;
       progressText = "";
@@ -111,6 +129,7 @@
       summary = { total: res.total, ready: res.ready, unchanged: res.unchanged, warnings: res.warnings, errors: res.errors };
     } catch (e) {
       console.error(e);
+      showNotice("err", t("previewFailed").replace("{e}", String(e)), 0);
     }
   }
 
@@ -132,9 +151,9 @@
     exporting = true;
     try {
       const n = await invoke("export_mapping_csv", { items, path });
-      alert(t("csvSaved").replace("{n}", n));
+      showNotice("ok", t("csvSaved").replace("{n}", n));
     } catch (e) {
-      alert(t("updateError") + ": " + e);
+      showNotice("err", t("errPrefix").replace("{e}", String(e)), 0);
     } finally {
       exporting = false;
     }
@@ -149,10 +168,10 @@
     const n = summary.ready + summary.warnings;
     if (n === 0) return;
     if (summary.errors > 0 && conflictStrategy === "block") {
-      alert(`มี ${summary.errors} รายการผิดพลาด ต้องแก้ก่อนเปลี่ยนชื่อ`);
+      showNotice("err", `มี ${summary.errors} รายการผิดพลาด ต้องแก้ก่อนเปลี่ยนชื่อ`, 0);
       return;
     }
-    const ok = confirm(`เปลี่ยนชื่อ ${n} รายการ?\n(ก่อนรันจะมีการตรวจสอบซ้ำอีกครั้งบนดิสก์)`);
+    const ok = await ask(`เปลี่ยนชื่อ ${n} รายการ?\n(ก่อนรันจะมีการตรวจสอบซ้ำอีกครั้งบนดิสก์)`, { title: t("rename") });
     if (!ok) return;
     renaming = true;
     progressText = t("renaming");
@@ -163,10 +182,10 @@
       await invoke("set_apply_to", { applyTo });
       const report = await invoke("apply_renames");
       undoBatches = await invoke("list_undo_history");
-      alert(`สำเร็จ ${report.renamed} รายการ, ล้มเหลว ${report.failed}`);
+      showNotice("ok", `สำเร็จ ${report.renamed} รายการ, ล้มเหลว ${report.failed}`);
       await refreshPreview();
     } catch (e) {
-      alert("ผิดพลาด: " + e);
+      showNotice("err", t("errPrefix").replace("{e}", String(e)), 0);
     } finally {
       renaming = false;
       progressText = "";
@@ -177,10 +196,10 @@
   export async function doUndo() {
     try {
       const msg = await invoke("undo_last");
-      alert(msg);
+      showNotice("ok", msg);
       await refreshPreview();
     } catch (e) {
-      alert("ย้อนกลับไม่ได้: " + e);
+      showNotice("err", t("errPrefix").replace("{e}", String(e)), 0);
     }
   }
 
@@ -191,12 +210,12 @@
   // Clear the whole working set (rules/presets untouched)
   export async function doClearEntries() {
     if (items.length === 0) return;
-    if (!confirm(t("confirmClear"))) return;
+    if (!await ask(t("confirmClear"), { title: t("clearList") })) return;
     try {
       await invoke("clear_entries");
       await refreshPreview();
     } catch (e) {
-      alert("ผิดพลาด: " + e);
+      showNotice("err", t("errPrefix").replace("{e}", String(e)), 0);
     }
   }
 
@@ -217,13 +236,13 @@
   async function doRemoveSelected() {
     const ids = items.filter((i) => i.selected).map((i) => i.id);
     if (ids.length === 0) return;
-    if (!confirm(t("confirmRemoveSelected").replace("{n}", ids.length))) return;
+    if (!await ask(t("confirmRemoveSelected").replace("{n}", ids.length), { title: t("removeSelected") })) return;
     try {
       await invoke("remove_entries", { ids });
-      alert(t("removed").replace("{n}", ids.length));
+      showNotice("ok", t("removed").replace("{n}", ids.length));
       await refreshPreview();
     } catch (e) {
-      alert("ผิดพลาด: " + e);
+      showNotice("err", t("errPrefix").replace("{e}", String(e)), 0);
     }
   }
 
@@ -231,7 +250,7 @@
   export async function doExportCsv() {
     const rows = filterItems(items, search, statusFilter);
     if (rows.length === 0) {
-      alert(t("csvEmpty"));
+      await message(t("csvEmpty"), { title: t("exportCsv") });
       return;
     }
     const path = await save({
@@ -243,9 +262,9 @@
     exporting = true;
     try {
       const n = await invoke("export_preview_csv", { items: rows, path });
-      alert(t("csvSaved").replace("{n}", n));
+      showNotice("ok", t("csvSaved").replace("{n}", n));
     } catch (e) {
-      alert(t("updateError") + ": " + e);
+      showNotice("err", t("errPrefix").replace("{e}", String(e)), 0);
     } finally {
       exporting = false;
     }
@@ -262,9 +281,13 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<div class="app" data-theme={ui.theme}>
+<svelte:window onkeydown={handleKeydown} />  <div class="app" data-theme={ui.theme}>
+  {#if notice.text}
+    <div class="notice notice-{notice.kind}" role="status" aria-live="polite">
+      <span class="notice-text">{notice.text}</span>
+      <button class="notice-close" aria-label="close" onclick={closeNotice}>✕</button>
+    </div>
+  {/if}
   <Toolbar
     bind:scanPath
     bind:recursive
@@ -358,6 +381,32 @@
     display: flex;
     flex: 1;
     min-height: 0;
+  }
+  .notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .notice-ok {
+    background: var(--panel);
+    background: color-mix(in srgb, var(--ok) 12%, var(--panel));
+    color: var(--text);
+  }
+  .notice-err {
+    background: var(--panel);
+    background: color-mix(in srgb, var(--err) 12%, var(--panel));
+    color: var(--err);
+  }
+  .notice-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .notice-close {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 2px 6px;
   }
   .table-pane {
     flex: 1;

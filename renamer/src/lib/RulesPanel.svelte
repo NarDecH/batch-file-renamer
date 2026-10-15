@@ -1,6 +1,6 @@
 <script>
   import { invoke } from "@tauri-apps/api/core";
-  import { open } from "@tauri-apps/plugin-dialog";
+  import { open, message } from "@tauri-apps/plugin-dialog";
   import { t } from "../i18n.svelte.js";
 
   let { rules = $bindable([]), onRulesChanged } = $props();
@@ -102,7 +102,7 @@
     try {
       const data = await invoke("parse_import_list", { path: file });
       if (!data.mapping.length && !data.orderedNames.length) {
-        alert("ไม่พบรายชื่อในไฟล์");
+        await message("ไม่พบรายชื่อในไฟล์", { title: "Import list" });
         return;
       }
       rules = [
@@ -115,9 +115,9 @@
         },
       ];
       changed();
-      alert(`นำเข้าแล้ว: ${data.mapping.length} คู่ชื่อ, ${data.orderedNames.length} ชื่อเรียงลำดับ`);
+      await message(`นำเข้าแล้ว: ${data.mapping.length} คู่ชื่อ, ${data.orderedNames.length} ชื่อเรียงลำดับ`, { title: "Import list" });
     } catch (e) {
-      alert("อ่านไฟล์ไม่สำเร็จ: " + e);
+      await message("อ่านไฟล์ไม่สำเร็จ: " + e, { title: "Import list" });
     }
   }
 
@@ -126,9 +126,9 @@
     if (!name) return;
     try {
       await invoke("save_preset", { name, rules });
-      alert("saved: " + name);
+      await message("saved: " + name, { title: "Save preset" });
     } catch (e) {
-      alert(e);
+      await message(String(e), { title: "Save preset" });
     }
   }
 
@@ -136,15 +136,16 @@
     try {
       const list = await invoke("list_presets");
       if (!list.length) {
-        alert("no presets saved yet");
+        await message("no presets saved yet", { title: "Load preset" });
         return;
       }
       const name = prompt("Preset name (one of: " + list.join(", ") + "):", list[0]);
       if (!name) return;
       rules = await invoke("load_preset", { name });
       changed();
+      await message("loaded: " + name, { title: "Load preset" });
     } catch (e) {
-      alert(e);
+      await message(String(e), { title: "Load preset" });
     }
   }
 </script>
