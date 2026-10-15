@@ -12,7 +12,10 @@
   // Watchdog: a pending downloadAndInstall() used to wait silently forever when
   // the NSIS installer stalled on a hidden wizard page (v0.12.2 bug). Now the
   // app tells the user after a grace period instead of waiting quietly.
-  const STUCK_AFTER_MS = 90_000;
+  // Tunable for testing on a real machine: set VITE_UPDATER_STUCK_MS to a
+  // small value in a dev session so the watchdog fires while the (real, slow)
+  // installer is still running. Production default stays 90s.
+  const STUCK_AFTER_MS = Number(import.meta.env?.VITE_UPDATER_STUCK_MS) || 90_000;
   let stuckTimer = null;
 
   function startWatchdog() {
